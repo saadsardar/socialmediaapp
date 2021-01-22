@@ -78,6 +78,7 @@ class _HomeState extends State<Home> {
   }
 
   createUserInFirestore() async {
+    print("in create");
     // 1) check if user exists in users collection in database (according to their id)
     final GoogleSignInAccount user = googleSignIn.currentUser;
     DocumentSnapshot doc = await usersRef.doc(user.id).get();
@@ -145,7 +146,9 @@ class _HomeState extends State<Home> {
           ActivityFeed(),
           Upload(currentUser: currentUser),
           Search(),
-          Profile(profileId: currentUser?.id,),
+          Profile(
+            profileId: currentUser?.id,
+          ),
         ],
         controller: pageController,
         onPageChanged: onPageChanged,
