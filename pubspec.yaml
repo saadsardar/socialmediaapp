@@ -57,6 +57,11 @@ flutter:
     - family: Signatra
       fonts:
         - asset: assets/fonts/Signatra.ttf
+    - family: ProductSans
+      fonts:
+        - asset: assets/fonts/ProductSans-Medium.ttf
+        - asset: assets/fonts/ProductSans-Bold.ttf
+          weight: 700
   assets:
     - assets/images/google_signin_button.png
     - assets/images/upload.svg

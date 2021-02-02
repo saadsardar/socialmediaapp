@@ -117,13 +117,15 @@ class _EditProfileState extends State<EditProfile> {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        title: Text(
-          "Edit Profile",
-          style: TextStyle(
-            color: Colors.black,
-          ),
-        ),
+        title: Text('Comments'),
+        leading: IconButton(
+            icon: Icon(
+              Icons.arrow_back_rounded,
+              color: Colors.white,
+            ),
+            onPressed: () {
+              Navigator.of(context).pop();
+            }),
         actions: <Widget>[
           IconButton(
             onPressed: () => Navigator.pop(context),

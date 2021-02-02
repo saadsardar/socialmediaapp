@@ -24,7 +24,17 @@ class PostScreen extends StatelessWidget {
         print(snapshot.data['postId']);
         return Center(
           child: Scaffold(
-            appBar: header(context, titleText: post.description),
+            appBar: AppBar(
+              title: Text(post.description),
+              leading: IconButton(
+                  icon: Icon(
+                    Icons.arrow_back_rounded,
+                    color: Colors.white,
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  }),
+            ),
             body: ListView(
               children: <Widget>[
                 Container(

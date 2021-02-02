@@ -2,12 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:social/Models/user.dart';
 import 'package:social/Pages/search.dart';
-import 'package:social/Widgets/header.dart';
+// import 'package:social/Widgets/header.dart';
 import 'package:social/Widgets/post.dart';
 import 'package:social/Widgets/progress.dart';
 
 import 'home.dart';
-
 
 final usersRef = FirebaseFirestore.instance.collection('users');
 
@@ -125,7 +124,7 @@ class _TimelineState extends State<Timeline> {
   @override
   Widget build(context) {
     return Scaffold(
-        appBar: header(context, isAppTitle: true),
+        // appBar: header(context, isAppTitle: true),
         body: RefreshIndicator(
             onRefresh: () => getTimeline(), child: buildTimeline()));
   }

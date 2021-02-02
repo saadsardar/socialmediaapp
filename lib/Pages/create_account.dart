@@ -30,8 +30,18 @@ class _CreateAccountState extends State<CreateAccount> {
   Widget build(BuildContext parentContext) {
     return Scaffold(
       key: _scaffoldKey,
-      appBar: header(context,
-          titleText: "Set up your profile", removeBackButton: true),
+      appBar: AppBar(
+        title: Text('Comments'),
+        automaticallyImplyLeading: false,
+        // leading: IconButton(
+        //     icon: Icon(
+        //       Icons.arrow_back_rounded,
+        //       color: Colors.white,
+        //     ),
+        //     onPressed: () {
+        //       Navigator.of(context).pop();
+        //     }),
+      ),
       body: ListView(
         children: <Widget>[
           Container(

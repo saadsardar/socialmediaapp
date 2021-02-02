@@ -17,7 +17,7 @@ void main() async {
   //   print("Error enabling timestamps in snapshots\n");
   // });
   WidgetsFlutterBinding.ensureInitialized();
-   FirebaseFirestore.instance.settings = Settings();
+  FirebaseFirestore.instance.settings = Settings();
   runApp(MyApp());
 }
 
@@ -26,12 +26,14 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.yellow,
-        accentColor: Colors.red,
+        primaryColor: Color(0xffFF0E23),
+        accentColor: Color(0xff757575),
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+        fontFamily: 'ProductSans',
       ),
-      home: Home(),
+      home: SafeArea(child: Home()),
     );
   }
 }

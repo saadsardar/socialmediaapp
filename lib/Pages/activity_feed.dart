@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:social/Pages/post_screen.dart';
 import 'package:social/Pages/profile.dart';
-import 'package:social/Widgets/header.dart';
+// import 'package:social/Widgets/header.dart';
 import 'package:social/Widgets/progress.dart';
 
 import 'package:timeago/timeago.dart' as timeago;
@@ -54,16 +54,32 @@ class _ActivityFeedState extends State<ActivityFeed> {
   Widget build(BuildContext context) {
     return Scaffold(
       //backgroundColor: Colors.orange,
-      appBar: header(context, titleText: "Activity Feed"),
+      // appBar: header(context, titleText: "Activity Feed"),
+      appBar: AppBar(
+        title: Text('Notifications'),
+        // leading: IconButton(
+        //     icon: Icon(
+        //       Icons.arrow_back_rounded,
+        //       color: Colors.white,
+        //     ),
+        //     onPressed: () {
+        //       Navigator.of(context).pop();
+        //     }),
+      ),
       body: Container(
           child: FutureBuilder(
         future: getActivityFeed(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            print('no Data');
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            // print('no Data');
             return circularProgress();
           }
           //return Text("data");
+          if (snapshot.data == null) {
+            return Center(
+              child: Text('No Notifications!'),
+            );
+          }
           return ListView(
             children: snapshot.data,
           );

@@ -4,12 +4,14 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:social/Models/user.dart' as Userclass;
+// import 'package:social/Pages/LiveUsers.dart';
 import 'package:social/Pages/activity_feed.dart';
 import 'package:social/Pages/profile.dart';
-import 'package:social/Pages/search.dart';
+// import 'package:social/Pages/search.dart';
 import 'package:social/Pages/timeline.dart';
 import 'package:social/Pages/upload.dart';
 
+import 'FrontPage.dart';
 import 'create_account.dart';
 
 final GoogleSignIn googleSignIn = GoogleSignIn();
@@ -43,7 +45,7 @@ class _HomeState extends State<Home> {
       (account) {
         if (account != null) {
           setState(() {
-            print("user $account");
+            // print("user $account");
             isAuth = true;
           });
         } else {
@@ -67,7 +69,7 @@ class _HomeState extends State<Home> {
       print('Error signing in: $err');
     });
   }
-  
+
   handleSignIn(GoogleSignInAccount account) async {
     if (account != null) {
       await createUserInFirestore();
@@ -106,8 +108,8 @@ class _HomeState extends State<Home> {
     }
 
     currentUser = Userclass.User.fromDocument(doc);
-    print(currentUser);
-    print(currentUser.username);
+    // print(currentUser);
+    // print(currentUser.username);
   }
 
   @override
@@ -142,10 +144,10 @@ class _HomeState extends State<Home> {
     return Scaffold(
       body: PageView(
         children: <Widget>[
+          FrontPage(currentUser),
           Timeline(currentUser: currentUser),
-          ActivityFeed(),
           Upload(currentUser: currentUser),
-          Search(),
+          ActivityFeed(),
           Profile(
             profileId: currentUser?.id,
           ),
@@ -163,7 +165,7 @@ class _HomeState extends State<Home> {
               icon: Icon(Icons.whatshot),
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.notifications_active),
+              icon: Icon(Icons.stars_sharp),
             ),
             BottomNavigationBarItem(
               icon: Icon(
@@ -172,17 +174,13 @@ class _HomeState extends State<Home> {
               ),
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.search),
+              icon: Icon(Icons.notifications_active),
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.account_circle),
             ),
           ]),
     );
-    // return RaisedButton(
-    //   child: Text('Logout'),
-    //   onPressed: logout,
-    // );
   }
 
   Widget buildUnAuthScreen() {
@@ -190,25 +188,17 @@ class _HomeState extends State<Home> {
       body: Container(
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Colors.teal,
-              Colors.pink,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: Theme.of(context).primaryColor,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
-              'Flutter Social',
+              'Liveo',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 60.0,
-                fontFamily: "Signatra",
               ),
             ),
             Divider(),

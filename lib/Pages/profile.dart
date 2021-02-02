@@ -322,7 +322,7 @@ class _ProfileState extends State<Profile> {
       return circularProgress();
     } else if (posts.isEmpty) {
       return Container(
-        child:Image.asset('assets/images/no_content.jpg'),
+        child: Image.asset('assets/images/no_content.jpg'),
         // Column(
         //   mainAxisAlignment: MainAxisAlignment.center,
         //   children: <Widget>[
@@ -393,7 +393,18 @@ class _ProfileState extends State<Profile> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: header(context, titleText: "Profile"),
+      appBar: AppBar(
+        title: Text('Profile'),
+        // automaticallyImplyLeading: false,
+        //   leading: IconButton(
+        //       icon: Icon(
+        //         Icons.arrow_back_rounded,
+        //         color: Colors.white,
+        //       ),
+        //       onPressed: () {
+        //         Navigator.of(context).pop();
+        //       }),
+      ),
       body: ListView(
         children: <Widget>[
           buildProfileHeader(),
