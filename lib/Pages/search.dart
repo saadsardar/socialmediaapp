@@ -7,19 +7,20 @@ import 'package:social/Models/user.dart';
 import 'package:social/Pages/activity_feed.dart';
 import 'package:social/Widgets/progress.dart';
 import 'home.dart';
+
 class Search extends StatefulWidget {
   @override
   _SearchState createState() => _SearchState();
 }
 
-class _SearchState extends State<Search> {
+class _SearchState extends State<Search>
+    with AutomaticKeepAliveClientMixin<Search> {
   TextEditingController searchController = TextEditingController();
   Future<QuerySnapshot> searchResultsFuture;
 
   handleSearch(String query) {
-    Future<QuerySnapshot> users = usersRef
-        .where("displayName", isGreaterThanOrEqualTo: query)
-        .get();
+    Future<QuerySnapshot> users =
+        usersRef.where("displayName", isGreaterThanOrEqualTo: query).get();
     setState(() {
       searchResultsFuture = users;
     });
@@ -98,8 +99,10 @@ class _SearchState extends State<Search> {
     );
   }
 
+  bool get wantKeepAlive => true;
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       backgroundColor: Theme.of(context).primaryColor.withOpacity(0.8),
       appBar: buildSearchField(),

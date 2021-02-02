@@ -20,6 +20,7 @@ final commentsRef = FirebaseFirestore.instance.collection('comments');
 final activityFeedRef = FirebaseFirestore.instance.collection('feed');
 final followingRef = FirebaseFirestore.instance.collection('following');
 final followersRef = FirebaseFirestore.instance.collection('followers');
+final timelineRef = FirebaseFirestore.instance.collection('timeline');
 final DateTime timestamp = DateTime.now();
 Userclass.User currentUser;
 
@@ -54,27 +55,30 @@ class _HomeState extends State<Home> {
         }
       },
     );
-    googleSignIn.signInSilently(suppressErrors: false).then(
-      (account) {
-        if (account != null) {
-          setState(() {
-            createUserInFirestore();
-            isAuth = true;
-          });
-        } else {
-          setState(() {
-            isAuth = false;
-          });
-        }
-      },
-      onError: (err) {
-        print('Error signing in: $err');
-      },
-    ).catchError(
-      (err) {
-        print('Error signing in: $err');
-      },
-    );
+    googleSignIn.onCurrentUserChanged.listen((account) {
+      handleSignIn(account);
+    }, onError: (err) {
+      print('Error signing in: $err');
+    });
+    // Reauthenticate user when app is opened
+    googleSignIn.signInSilently(suppressErrors: false).then((account) {
+      handleSignIn(account);
+    }).catchError((err) {
+      print('Error signing in: $err');
+    });
+  }
+  
+  handleSignIn(GoogleSignInAccount account) async {
+    if (account != null) {
+      await createUserInFirestore();
+      setState(() {
+        isAuth = true;
+      });
+    } else {
+      setState(() {
+        isAuth = false;
+      });
+    }
   }
 
   createUserInFirestore() async {
@@ -138,11 +142,7 @@ class _HomeState extends State<Home> {
     return Scaffold(
       body: PageView(
         children: <Widget>[
-          //Timeline(),
-          RaisedButton(
-            child: Text('Logout'),
-            onPressed: logout,
-          ),
+          Timeline(currentUser: currentUser),
           ActivityFeed(),
           Upload(currentUser: currentUser),
           Search(),
