@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -30,6 +33,8 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
+  FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
   bool isAuth = false;
   PageController pageController;
   int pageIndex = 0;
@@ -46,6 +51,8 @@ class _HomeState extends State<Home> {
             print("user $account");
             isAuth = true;
           });
+                configurePushNotifications();
+
         } else {
           setState(
             () {
@@ -67,7 +74,7 @@ class _HomeState extends State<Home> {
       print('Error signing in: $err');
     });
   }
-  
+
   handleSignIn(GoogleSignInAccount account) async {
     if (account != null) {
       await createUserInFirestore();
@@ -79,6 +86,44 @@ class _HomeState extends State<Home> {
         isAuth = false;
       });
     }
+  }
+    configurePushNotifications() {
+    final GoogleSignInAccount user = googleSignIn.currentUser;
+    if (Platform.isIOS) getiOSPermission();
+
+    _firebaseMessaging.getToken().then((token) {
+      print("Firebase Messaging Token: $token\n");
+      usersRef
+          .doc(user.id)
+          .update({"androidNotificationToken": token});
+    });
+
+    _firebaseMessaging.configure(
+      // onLaunch: (Map<String, dynamic> message) async {},
+      // onResume: (Map<String, dynamic> message) async {},
+      onMessage: (Map<String, dynamic> message) async {
+        print("on message: $message\n");
+        final String recipientId = message['data']['recipient'];
+        final String body = message['notification']['body'];
+        if (recipientId == user.id) {
+          print("Notification shown!");
+          SnackBar snackbar = SnackBar(
+              content: Text(
+            body,
+            overflow: TextOverflow.ellipsis,
+          ));
+          _scaffoldKey.currentState.showSnackBar(snackbar);
+        }
+        print("Notification NOT shown");
+      },
+    );
+  }
+    getiOSPermission() {
+    _firebaseMessaging.requestNotificationPermissions(
+        IosNotificationSettings(alert: true, badge: true, sound: true));
+    _firebaseMessaging.onIosSettingsRegistered.listen((settings) {
+      print("Settings registered: $settings");
+    });
   }
 
   createUserInFirestore() async {
