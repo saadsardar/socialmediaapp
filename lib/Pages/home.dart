@@ -51,8 +51,6 @@ class _HomeState extends State<Home> {
             print("user $account");
             isAuth = true;
           });
-                configurePushNotifications();
-
         } else {
           setState(
             () {
@@ -81,6 +79,7 @@ class _HomeState extends State<Home> {
       setState(() {
         isAuth = true;
       });
+      configurePushNotifications();
     } else {
       setState(() {
         isAuth = false;
@@ -185,6 +184,8 @@ class _HomeState extends State<Home> {
 
   Scaffold buildAuthScreen() {
     return Scaffold(
+            key: _scaffoldKey,
+
       body: PageView(
         children: <Widget>[
           Timeline(currentUser: currentUser),
