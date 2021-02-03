@@ -8,8 +8,6 @@ import 'package:social/Models/user.dart';
 import 'package:social/Pages/comments.dart';
 import 'package:social/Pages/home.dart';
 import 'package:social/Pages/profile.dart';
-import 'package:social/Widgets/progress.dart';
-//import 'package:animator/animator.dart';
 import 'custom_image.dart';
 
 class Post extends StatefulWidget {
@@ -100,12 +98,15 @@ class _PostState extends State<Post> {
       future: usersRef.doc(ownerId).get(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return circularProgress();
+          return Container(
+            height: 70,
+          );
         }
         User user = User.fromDocument(snapshot.data);
         bool isPostOwner = currentUserId == ownerId;
         return ListTile(
           leading: CircleAvatar(
+            radius: 20,
             backgroundImage: CachedNetworkImageProvider(user.photoUrl),
             backgroundColor: Colors.grey,
           ),
@@ -119,7 +120,10 @@ class _PostState extends State<Post> {
               ),
             ),
           ),
-          subtitle: Text(location),
+          subtitle: Text(
+            description,
+            maxLines: 3,
+          ),
           trailing: isPostOwner
               ? IconButton(
                   onPressed: () => handleDeletePost(context),
@@ -158,12 +162,7 @@ class _PostState extends State<Post> {
   // Note: To delete post, ownerId and currentUserId must be equal, so they can be used interchangeably
   deletePost() async {
     // delete post itself
-    postsRef
-        .doc(ownerId)
-        .collection('userPosts')
-        .doc(postId)
-        .get()
-        .then((doc) {
+    postsRef.doc(ownerId).collection('userPosts').doc(postId).get().then((doc) {
       if (doc.exists) {
         doc.reference.delete();
       }
@@ -182,10 +181,8 @@ class _PostState extends State<Post> {
       }
     });
     // then delete all comments
-    QuerySnapshot commentsSnapshot = await commentsRef
-        .doc(postId)
-        .collection('comments')
-        .get();
+    QuerySnapshot commentsSnapshot =
+        await commentsRef.doc(postId).collection('comments').get();
     commentsSnapshot.docs.forEach((doc) {
       if (doc.exists) {
         doc.reference.delete();
@@ -266,7 +263,7 @@ class _PostState extends State<Post> {
     return GestureDetector(
       onDoubleTap: handleLikePost,
       child: Stack(
-        alignment: Alignment.center,
+        alignment: Alignment.centerLeft,
         children: <Widget>[
           cachedNetworkImage(mediaUrl),
           showHeart
@@ -337,22 +334,22 @@ class _PostState extends State<Post> {
             ),
           ],
         ),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Container(
-              margin: EdgeInsets.only(left: 20.0),
-              child: Text(
-                "$username ",
-                style: TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            Expanded(child: Text(description))
-          ],
-        ),
+        // Row(
+        //   crossAxisAlignment: CrossAxisAlignment.start,
+        //   children: <Widget>[
+        //     Container(
+        //       margin: EdgeInsets.only(left: 20.0),
+        //       child: Text(
+        //         "$username ",
+        //         style: TextStyle(
+        //           color: Colors.black,
+        //           fontWeight: FontWeight.bold,
+        //         ),
+        //       ),
+        //     ),
+        //     Expanded(child: Text(description))
+        //   ],
+        // ),
       ],
     );
   }
@@ -363,6 +360,7 @@ class _PostState extends State<Post> {
 
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         buildPostHeader(),
         buildPostImage(),

@@ -117,7 +117,7 @@ class _EditProfileState extends State<EditProfile> {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        title: Text('Comments'),
+        title: Text('Edit'),
         leading: IconButton(
             icon: Icon(
               Icons.arrow_back_rounded,
@@ -126,16 +126,17 @@ class _EditProfileState extends State<EditProfile> {
             onPressed: () {
               Navigator.of(context).pop();
             }),
-        actions: <Widget>[
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: Icon(
-              Icons.done,
-              size: 30.0,
-              color: Colors.green,
-            ),
-          ),
-        ],
+
+        // actions: <Widget>[
+        //   IconButton(
+        //     onPressed: () => Navigator.pop(context),
+        //     icon: Icon(
+        //       Icons.done,
+        //       size: 30.0,
+        //       color: Colors.green,
+        //     ),
+        //   ),
+        // ],
       ),
       body: isLoading
           ? circularProgress()
@@ -165,27 +166,28 @@ class _EditProfileState extends State<EditProfile> {
                         ),
                       ),
                       RaisedButton(
+                        color: Theme.of(context).primaryColor,
                         onPressed: updateProfileData,
                         child: Text(
                           "Update Profile",
                           style: TextStyle(
-                            color: Theme.of(context).primaryColor,
+                            color: Colors.white,
                             fontSize: 20.0,
-                            fontWeight: FontWeight.bold,
+                            // fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
-                      Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: FlatButton.icon(
-                          onPressed: logout,
-                          icon: Icon(Icons.cancel, color: Colors.red),
-                          label: Text(
-                            "Logout",
-                            style: TextStyle(color: Colors.red, fontSize: 20.0),
-                          ),
-                        ),
-                      ),
+                      // Padding(
+                      //   padding: EdgeInsets.all(16.0),
+                      //   child: FlatButton.icon(
+                      //     onPressed: logout,
+                      //     icon: Icon(Icons.cancel, color: Colors.red),
+                      //     label: Text(
+                      //       "Logout",
+                      //       style: TextStyle(color: Colors.red, fontSize: 20.0),
+                      //     ),
+                      //   ),
+                      // ),
                     ],
                   ),
                 ),

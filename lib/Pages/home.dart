@@ -4,13 +4,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:social/Models/user.dart' as Userclass;
-// import 'package:social/Pages/LiveUsers.dart';
+import 'package:social/Pages/LiveUsers.dart';
 import 'package:social/Pages/activity_feed.dart';
 import 'package:social/Pages/profile.dart';
-// import 'package:social/Pages/search.dart';
-import 'package:social/Pages/timeline.dart';
 import 'package:social/Pages/upload.dart';
-
 import 'FrontPage.dart';
 import 'create_account.dart';
 
@@ -144,9 +141,12 @@ class _HomeState extends State<Home> {
     return Scaffold(
       body: PageView(
         children: <Widget>[
+          // FrontPage(currentUser),
+          LiveUsers(currentUser),
           FrontPage(currentUser),
-          Timeline(currentUser: currentUser),
+          // Timeline(currentUser: currentUser),
           Upload(currentUser: currentUser),
+          // CallPage()
           ActivityFeed(),
           Profile(
             profileId: currentUser?.id,
@@ -169,7 +169,7 @@ class _HomeState extends State<Home> {
             ),
             BottomNavigationBarItem(
               icon: Icon(
-                Icons.photo_camera,
+                Icons.add_a_photo_rounded,
                 size: 35.0,
               ),
             ),
@@ -194,13 +194,19 @@ class _HomeState extends State<Home> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(
-              'Liveo',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 60.0,
-              ),
-            ),
+            Container(
+                width: MediaQuery.of(context).size.width * 0.8,
+                child: Image.asset(
+                  'assets/images/logo.png',
+                  fit: BoxFit.contain,
+                )),
+            // Text(
+            //   'Liveo',
+            //   style: TextStyle(
+            //     color: Colors.white,
+            //     fontSize: 60.0,
+            //   ),
+            // ),
             Divider(),
             GestureDetector(
               child: Container(

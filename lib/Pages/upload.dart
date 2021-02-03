@@ -176,21 +176,22 @@ class _UploadState extends State<Upload>
   Scaffold buildUploadForm() {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white70,
-        leading: IconButton(
-            icon: Icon(Icons.arrow_back, color: Colors.black),
-            onPressed: clearImage),
+        // backgroundColor: Colors.white70,
+        // leading: IconButton(
+        //     icon: Icon(Icons.arrow_back),
+        //     onPressed: () => Navigator.of(context).pop()),
         title: Text(
-          "Caption Post",
-          style: TextStyle(color: Colors.black),
+          "New Post",
+          // style: TextStyle(color: Colors.black),
         ),
         actions: [
           FlatButton(
-            onPressed: isUploading ? null : () => handleSubmit(),
+            onPressed:
+                isUploading || file == null ? null : () => handleSubmit(),
             child: Text(
               "Post",
               style: TextStyle(
-                color: Colors.blueAccent,
+                color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 20.0,
               ),
@@ -207,14 +208,21 @@ class _UploadState extends State<Upload>
             child: Center(
               child: AspectRatio(
                 aspectRatio: 16 / 9,
-                child: Container(
-                  decoration: BoxDecoration(
-                    image: DecorationImage(
-                      fit: BoxFit.cover,
-                      image: FileImage(file),
-                    ),
-                  ),
-                ),
+                child: file == null
+                    ? FlatButton.icon(
+                        onPressed: () {
+                          selectImage(context);
+                        },
+                        icon: Icon(Icons.add_a_photo_rounded),
+                        label: Text('Add Photo'))
+                    : Container(
+                        decoration: BoxDecoration(
+                          image: DecorationImage(
+                            fit: BoxFit.cover,
+                            image: FileImage(file),
+                          ),
+                        ),
+                      ),
               ),
             ),
           ),
@@ -267,7 +275,7 @@ class _UploadState extends State<Upload>
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(30.0),
               ),
-              color: Colors.blue,
+              color: Theme.of(context).primaryColor,
               onPressed: getUserLocation,
               icon: Icon(
                 Icons.my_location,
@@ -300,6 +308,7 @@ class _UploadState extends State<Upload>
   Widget build(BuildContext context) {
     super.build(context);
 
-    return file == null ? buildSplashScreen() : buildUploadForm();
+    // return file == null ? buildSplashScreen() :
+    return buildUploadForm();
   }
 }

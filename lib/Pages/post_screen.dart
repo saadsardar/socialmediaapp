@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:social/Widgets/header.dart';
 import 'package:social/Widgets/post.dart';
 import 'package:social/Widgets/progress.dart';
 
