@@ -30,6 +30,11 @@ class _TimelineState extends State<Timeline> {
     getFollowing();
   }
 
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
   getTimeline() async {
     QuerySnapshot snapshot = await timelineRef
         .doc(widget.currentUser.id)

@@ -30,7 +30,7 @@ class _CreateAccountState extends State<CreateAccount> {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        title: Text('Comments'),
+        title: Text('Create Account'),
         automaticallyImplyLeading: false,
         // leading: IconButton(
         //     icon: Icon(

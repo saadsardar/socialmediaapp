@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:social/Models/user.dart';
+import 'package:social/Pages/AllChatsScreen.dart';
 import 'package:social/Pages/ChatScreen.dart';
 import 'package:social/Pages/PaymentScreen.dart';
 import 'package:social/Widgets/post.dart';
@@ -20,6 +21,7 @@ class Profile extends StatefulWidget {
 }
 
 class _ProfileState extends State<Profile> {
+  User profileUser;
   final String currentUserId = currentUser?.id;
   String postOrientation = "grid";
   bool isLoading = false;
@@ -196,8 +198,10 @@ class _ProfileState extends State<Profile> {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             profileOwnerIconItem(Icons.message, () {
-              // Navigator.of(context)
-              //     .push(MaterialPageRoute(builder: (ctx) => ChatScreen()));
+              Navigator.of(context).push(MaterialPageRoute(
+                  builder: (ctx) => AllChatsScreen(
+                        currentUserId: currentUserId,
+                      )));
             }),
             profileOwnerIconItem(Icons.account_balance_wallet, () {
               Navigator.of(context)
@@ -229,27 +233,27 @@ class _ProfileState extends State<Profile> {
         //   ],
         // ),
       );
-    } else if (isFollowing) {
+    } else {
       return Row(
         children: [
-          buildButton(
-            text: "Unfollow",
-            function: handleUnfollowUser,
-          ),
+          isFollowing
+              ? buildButton(
+                  text: "Unfollow",
+                  function: handleUnfollowUser,
+                )
+              : buildButton(
+                  text: "Follow",
+                  function: handleFollowUser,
+                ),
           buildButton(
             text: "Message",
             function: () {
               Navigator.of(context).push(MaterialPageRoute(
                   builder: (ctx) =>
-                      ChatScreen(currentUserId, widget.profileId)));
+                      ChatScreen(currentUser.id, profileUser.id)));
             },
           ),
         ],
-      );
-    } else if (!isFollowing) {
-      return buildButton(
-        text: "Follow",
-        function: handleFollowUser,
       );
     }
   }
@@ -334,7 +338,7 @@ class _ProfileState extends State<Profile> {
         if (!snapshot.hasData) {
           return circularProgress();
         }
-        User user = User.fromDocument(snapshot.data);
+        profileUser = User.fromDocument(snapshot.data);
         return Padding(
           padding: EdgeInsets.symmetric(vertical: 30.0, horizontal: 16),
           child: Column(
@@ -345,7 +349,8 @@ class _ProfileState extends State<Profile> {
               CircleAvatar(
                 radius: 40.0,
                 backgroundColor: Colors.grey,
-                backgroundImage: CachedNetworkImageProvider(user.photoUrl),
+                backgroundImage:
+                    CachedNetworkImageProvider(profileUser.photoUrl),
               ),
               // Expanded(
               //   flex: 1,
@@ -375,28 +380,28 @@ class _ProfileState extends State<Profile> {
                 // alignment: Alignment.centerLeft,
                 padding: EdgeInsets.only(top: 12.0),
                 child: Text(
-                  user.username,
+                  profileUser.displayName,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
                   ),
                 ),
               ),
-              Container(
-                // alignment: Alignment.centerLeft,
-                padding: EdgeInsets.only(top: 4.0),
-                child: Text(
-                  user.displayName,
-                  style: TextStyle(
-                      // fontWeight: FontWeight.bold,
-                      ),
-                ),
-              ),
+              // Container(
+              //   // alignment: Alignment.centerLeft,
+              //   padding: EdgeInsets.only(top: 4.0),
+              //   child: Text(
+              //     user.displayName,
+              //     style: TextStyle(
+              //         // fontWeight: FontWeight.bold,
+              //         ),
+              //   ),
+              // ),
               Container(
                 // alignment: Alignment.centerLeft,
                 padding: EdgeInsets.only(top: 2.0),
                 child: Text(
-                  user.bio,
+                  profileUser.bio,
                 ),
               ),
               SizedBox(

@@ -1,6 +1,8 @@
 import 'package:agora_rtc_engine/rtc_engine.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:social/Models/Streams.dart';
 import 'package:social/Pages/call.dart';
 import 'package:social/Pages/search.dart';
 import '../Models/user.dart';
@@ -29,29 +31,31 @@ class _LiveUsersState extends State<LiveUsers> {
       print(status);
     }
 
-    gridViewItem(String liveStreamUserId) {
+    gridViewItem(LiveStream liveStream) {
+      print(liveStream);
       return GestureDetector(
         onTap: () async {
           await _handleCameraAndMic(Permission.camera);
           await _handleCameraAndMic(Permission.microphone);
           Navigator.of(context).push(MaterialPageRoute(
             builder: (context) => CallPage(
-              channelName: liveStreamUserId,
+              channelName: liveStream.channelName,
               role: ClientRole.Audience,
               currentUser: widget.currentUser,
             ),
           ));
         },
         child: Container(
-          height: 120,
+          margin: const EdgeInsets.all(10),
+          height: 100,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.all(Radius.circular(30)),
             color: Colors.red,
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.all(Radius.circular(30)),
-            child: Image.network(
-                'https://i.pinimg.com/originals/6c/09/0f/6c090f6bdb01fa8e15a6fcd3cd2f6043.jpg',
+            child: Image.network(liveStream.picture,
+                // 'https://i.pinimg.com/originals/6c/09/0f/6c090f6bdb01fa8e15a6fcd3cd2f6043.jpg',
                 fit: BoxFit.cover),
           ),
         ),
@@ -146,19 +150,44 @@ class _LiveUsersState extends State<LiveUsers> {
             ),
           ),
           Expanded(
-            child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 15.0, vertical: 20),
-              child: GridView.builder(
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 10,
-                      // childAspectRatio: 0.8,
-                      crossAxisSpacing: 15),
-                  itemCount: 10,
-                  itemBuilder: (ctx, i) => gridViewItem('String ')),
-              // ),
+            child: StreamBuilder(
+              stream: FirebaseFirestore.instance
+                  .collection('livestream')
+                  .snapshots(),
+              builder: (ctx, snap) {
+                if (snap.connectionState == ConnectionState.waiting) {
+                  return Center(
+                    child: CircularProgressIndicator(),
+                  );
+                } else {
+                  List<LiveStream> liveStreams = [];
+                  final chatSnapshot = snap.data as QuerySnapshot;
+                  print(chatSnapshot);
+                  if (chatSnapshot == null || chatSnapshot.docs.length == 0) {
+                    return Center(child: Text('No Live Streams'));
+                  }
+
+                  chatSnapshot.docs.forEach(
+                    (e) {
+                      print(e);
+                      var map = e.data();
+                      liveStreams.add(LiveStream.fromJson(map));
+                    },
+                  );
+
+                  return GridView.builder(
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 10,
+                          // childAspectRatio: 0.8,
+                          crossAxisSpacing: 15),
+                      itemCount: liveStreams.length,
+                      itemBuilder: (ctx, i) => gridViewItem(liveStreams[i]));
+                }
+              },
             ),
+            // ),
+            // ),
           ),
         ],
       ),

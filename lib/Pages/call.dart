@@ -5,6 +5,7 @@ import 'package:agora_rtc_engine/rtc_engine.dart';
 import 'package:agora_rtc_engine/rtc_local_view.dart' as RtcLocalView;
 import 'package:agora_rtc_engine/rtc_remote_view.dart' as RtcRemoteView;
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:social/Models/message.dart';
 import 'package:social/Models/user.dart';
@@ -31,10 +32,9 @@ class CallPage extends StatefulWidget {
 
 class _CallPageState extends State<CallPage> {
   final _users = <int>[];
-  final _infoStrings = <String>[];
-  final _infoStrings2 = <Message>[];
   bool muted = false;
   RtcEngine _engine;
+  int liveUsersCount = 0;
 
   @override
   void dispose() {
@@ -103,10 +103,34 @@ class _CallPageState extends State<CallPage> {
         print(e);
       }
     } else {
-      // get token from firebase
+      try {
+        final liveStreamSnapshot = await FirebaseFirestore.instance
+            .collection('livestream')
+            .doc(widget.channelName)
+            .get();
+        final liveStreamData = liveStreamSnapshot.data();
+        token = liveStreamData['token'];
+        liveUsersCount = liveStreamData['liveUsersCount'];
+      } catch (e) {
+        final info = 'onError: $e';
+        _log(info: info, type: 'notif', user: 'System');
+      }
     }
-    // print('Going to join channel: $token');
-
+    if (widget.role == ClientRole.Broadcaster) {
+      await FirebaseFirestore.instance
+          .collection('livestream')
+          .doc(widget.channelName)
+          .set({
+        'channelName': widget.channelName,
+        'token': token,
+        'hostName': widget.currentUser.displayName,
+        'picture': widget.currentUser.photoUrl,
+        'liveUsersCount': 1
+      });
+      setState(() {
+        liveUsersCount = 1;
+      });
+    }
     await _engine.joinChannel(token, widget.channelName, null, 0);
   }
 
@@ -130,31 +154,36 @@ class _CallPageState extends State<CallPage> {
         print('Error');
         final info = 'onError: $code';
         _log(info: info, type: 'notif', user: 'System');
-        _infoStrings.add(info);
       });
     }, joinChannelSuccess: (channel, uid, elapsed) {
       setState(() {
         final info = 'onJoinChannel: $channel, uid: $uid';
         _log(info: info, type: 'notif', user: 'System');
-        _infoStrings.add(info);
       });
     }, leaveChannel: (stats) {
       setState(() {
         _log(info: 'onLeaveChannel', type: 'notif', user: 'System');
-        _infoStrings.add('onLeaveChannel');
         _users.clear();
       });
     }, userJoined: (uid, elapsed) {
-      setState(() {
+      setState(() async {
         final info = 'userJoined: $uid';
         _log(info: info, type: 'notif', user: 'System');
-        _infoStrings.add(info);
         _users.add(uid);
+        final liveStreamSnapshot = await FirebaseFirestore.instance
+            .collection('livestream')
+            .doc(widget.channelName)
+            .get();
+        final liveStreamData = liveStreamSnapshot.data();
+        liveUsersCount = liveStreamData['liveUsersCount'] + 1;
+        await FirebaseFirestore.instance
+            .collection('livestream')
+            .doc(widget.channelName)
+            .update({'liveUsersCount': liveStreamData['liveUsersCount'] + 1});
       });
     }, userOffline: (uid, elapsed) {
       setState(() {
         final info = 'userOffline: $uid';
-        _infoStrings.add(info);
         _log(info: info, type: 'notif', user: 'System');
         _users.remove(uid);
       });
@@ -162,7 +191,6 @@ class _CallPageState extends State<CallPage> {
       setState(() {
         final info = 'firstRemoteVideo: $uid ${width}x $height';
         _log(info: info, type: 'notif', user: 'System');
-        _infoStrings.add(info);
       });
     }));
   }
@@ -228,117 +256,6 @@ class _CallPageState extends State<CallPage> {
       default:
     }
     return Container();
-  }
-
-  /// Toolbar layout
-  Widget _toolbar() {
-    if (widget.role == ClientRole.Audience) return Container();
-    return Container(
-      alignment: Alignment.bottomCenter,
-      padding: const EdgeInsets.symmetric(vertical: 48),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          RawMaterialButton(
-            onPressed: _onToggleMute,
-            child: Icon(
-              muted ? Icons.mic_off : Icons.mic,
-              color: muted ? Colors.white : Colors.blueAccent,
-              size: 20.0,
-            ),
-            shape: CircleBorder(),
-            elevation: 2.0,
-            fillColor: muted ? Colors.blueAccent : Colors.white,
-            padding: const EdgeInsets.all(12.0),
-          ),
-          RawMaterialButton(
-            onPressed: () => _onCallEnd(context),
-            child: Icon(
-              Icons.call_end,
-              color: Colors.white,
-              size: 35.0,
-            ),
-            shape: CircleBorder(),
-            elevation: 2.0,
-            fillColor: Colors.redAccent,
-            padding: const EdgeInsets.all(15.0),
-          ),
-          RawMaterialButton(
-            onPressed: _onSwitchCamera,
-            child: Icon(
-              Icons.switch_camera,
-              color: Colors.blueAccent,
-              size: 20.0,
-            ),
-            shape: CircleBorder(),
-            elevation: 2.0,
-            fillColor: Colors.white,
-            padding: const EdgeInsets.all(12.0),
-          )
-        ],
-      ),
-    );
-  }
-
-  /// Info panel to show logs
-  Widget _panel() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 48),
-      alignment: Alignment.bottomCenter,
-      child: FractionallySizedBox(
-        heightFactor: 0.5,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 48),
-          child: ListView.builder(
-            reverse: true,
-            itemCount: _infoStrings2.length,
-            itemBuilder: (BuildContext context, int index) {
-              if (_infoStrings2.isEmpty) {
-                return null;
-              }
-              return Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 3,
-                  horizontal: 10,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 2,
-                          horizontal: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.yellowAccent,
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        child: Text(
-                          _infoStrings2[index].message,
-                          style: TextStyle(color: Colors.blueGrey),
-                        ),
-                      ),
-                    )
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _onCallEnd(BuildContext context) {
-    Navigator.pop(context);
-  }
-
-  void _onToggleMute() {
-    setState(() {
-      muted = !muted;
-    });
-    _engine.muteLocalAudioStream(muted);
   }
 
   void _onSwitchCamera() {
@@ -428,7 +345,7 @@ class _CallPageState extends State<CallPage> {
                           width: 5,
                         ),
                         Text(
-                          '5',
+                          '$liveUsersCount',
                           style: TextStyle(color: Colors.white, fontSize: 11),
                         ),
                       ],
@@ -442,7 +359,7 @@ class _CallPageState extends State<CallPage> {
   }
 
   Widget endLive() {
-    print('ENd Tapped');
+    // print('ENd Tapped');
     return Container(
       color: Colors.black.withOpacity(0.5),
       child: Stack(
@@ -478,10 +395,37 @@ class _CallPageState extends State<CallPage> {
                       elevation: 2.0,
                       color: Theme.of(context).primaryColor,
                       onPressed: () async {
+                        if (widget.channelName
+                            .contains(widget.currentUser.id)) {
+                          print('Channel Name: ${widget.channelName}');
+                          print('Current User: ${widget.currentUser.id}');
+                          final value = await FirebaseFirestore.instance
+                              .collection('livestream')
+                              .doc(widget.channelName)
+                              .collection('comments')
+                              .get();
+
+                          final val = value.docs;
+                          val.forEach((e) {
+                            FirebaseFirestore.instance
+                                .collection('livestream')
+                                .doc(widget.channelName)
+                                .collection('comments')
+                                .doc(e.id)
+                                .delete();
+                          });
+
+                          await FirebaseFirestore.instance
+                              .collection('livestream')
+                              .doc(widget.channelName)
+                              .delete();
+
+                          print('Deleted From Firebase');
+                        }
                         // await Wakelock.disable();
                         // _logout();
                         // _leaveChannel();
-                        // AgoraRtcEngine.leaveChannel();
+                        // RTCEngine.leaveChannel();
                         // AgoraRtcEngine.destroy();
                         // FireStoreClass.deleteUser(username: channelName);
                         Navigator.pop(context);
@@ -554,134 +498,144 @@ class _CallPageState extends State<CallPage> {
       alignment: Alignment.bottomCenter,
       child: FractionallySizedBox(
         heightFactor: 0.5,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 48),
-          child: ListView.builder(
-            reverse: true,
-            itemCount: _infoStrings2.length,
-            itemBuilder: (BuildContext context, int index) {
-              if (_infoStrings2.isEmpty) {
-                return null;
+        child: StreamBuilder(
+          stream: FirebaseFirestore.instance
+              .collection('livestream')
+              .doc(widget.channelName)
+              .collection('comments')
+              .snapshots(),
+          builder: (ctx, snap) {
+            if (snap.connectionState == ConnectionState.waiting) {
+              return Center(
+                child: CircularProgressIndicator(),
+              );
+            } else {
+              List<Message> messages = [];
+              final chatSnapshot = snap.data;
+              if (chatSnapshot == null) {
+                return Container();
+                // Center(child: Text('Start A Conversation'));
               }
+              chatSnapshot.documents.forEach(
+                (e) {
+                  var map = e.data();
+                  // map['chatId'] = e.id;
+                  messages.add(Message.fromJson(map));
+                },
+              );
+              messages.sort((a, b) => b.timestamp.compareTo(a.timestamp));
               return Container(
-                color: Colors.black12,
-                margin: const EdgeInsets.symmetric(vertical: 2),
-                padding:
-                    const EdgeInsets.symmetric(vertical: 3, horizontal: 10),
-                child: (_infoStrings2[index].type == 'join')
-                    ? Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.max,
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: <Widget>[
-                            CachedNetworkImage(
-                              imageUrl:
-                                  'https://www.teahub.io/photos/full/364-3646192_beautiful-girls-4k-images-dpz-beautiful-pinterest-girls.jpg',
-                              imageBuilder: (context, imageProvider) =>
-                                  Container(
-                                width: 32.0,
-                                height: 32.0,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  image: DecorationImage(
-                                      image: imageProvider, fit: BoxFit.cover),
-                                ),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                              ),
-                              child: Text(
-                                'New User joined',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : (_infoStrings2[index].type == 'message')
-                        ? Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.max,
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: <Widget>[
-                                CachedNetworkImage(
-                                  imageUrl: _infoStrings2[index].image,
-                                  imageBuilder: (context, imageProvider) =>
-                                      Container(
-                                    width: 32.0,
-                                    height: 32.0,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      image: DecorationImage(
-                                          image: imageProvider,
-                                          fit: BoxFit.cover),
+                padding: const EdgeInsets.symmetric(vertical: 48),
+                child: ListView.builder(
+                  reverse: true,
+                  itemCount: messages.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    if (messages.isEmpty) {
+                      return null;
+                    }
+                    return Container(
+                      color: Colors.black12,
+                      margin: const EdgeInsets.symmetric(vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 3, horizontal: 10),
+                      child: (messages[index].type == 'join')
+                          ? Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.max,
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                children: <Widget>[
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                    ),
+                                    child: Text(
+                                      'New User joined',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: <Widget>[
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
+                                ],
+                              ),
+                            )
+                          : (messages[index].type == 'message')
+                              ? Padding(
+                                  padding: const EdgeInsets.only(bottom: 10),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.max,
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    children: <Widget>[
+                                      CachedNetworkImage(
+                                        imageUrl: messages[index].image,
+                                        imageBuilder:
+                                            (context, imageProvider) =>
+                                                Container(
+                                          width: 32.0,
+                                          height: 32.0,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            image: DecorationImage(
+                                                image: imageProvider,
+                                                fit: BoxFit.cover),
+                                          ),
+                                        ),
                                       ),
-                                      child: Text(
-                                        _infoStrings2[index].user,
-                                        style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      height: 5,
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                      ),
-                                      child: Text(
-                                        _infoStrings2[index].message,
-                                        style: TextStyle(
-                                            color: Colors.white, fontSize: 14),
-                                      ),
-                                    ),
-                                  ],
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: <Widget>[
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                            ),
+                                            child: Text(
+                                              messages[index].user,
+                                              style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                          SizedBox(
+                                            height: 5,
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                            ),
+                                            child: Text(
+                                              messages[index].message,
+                                              style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 14),
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                    ],
+                                  ),
                                 )
-                              ],
-                            ),
-                          )
-                        : (_infoStrings2[index].type == 'notif')
-                            ? Padding(
-                                padding: const EdgeInsets.only(bottom: 10),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.max,
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  children: <Widget>[
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                      ),
+                              : (messages[index].type == 'notif')
+                                  ? Padding(
+                                      padding: const EdgeInsets.only(
+                                          bottom: 10, left: 8, right: 8),
                                       child: Text(
-                                        _infoStrings2[index].message,
+                                        messages[index].message,
+                                        maxLines: 3,
+                                        overflow: TextOverflow.fade,
                                         style: TextStyle(
                                             color: Colors.white, fontSize: 14),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : null,
+                                    )
+                                  : null,
+                    );
+                  },
+                ),
               );
-            },
-          ),
+            }
+          },
         ),
       ),
     );
@@ -885,14 +839,26 @@ class _CallPageState extends State<CallPage> {
     } else {
       // var image =
       //     'https://www.teahub.io/photos/full/364-3646192_beautiful-girls-4k-images-dpz-beautiful-pinterest-girls.jpg';
-      Message m = new Message(
-          message: info,
-          type: type,
-          user: user,
-          image: widget.currentUser.photoUrl);
-      setState(() {
-        _infoStrings2.insert(0, m);
+      // Message m = new Message(
+      //     message: info,
+      //     type: type,
+      //     user: user,
+      //     image: widget.currentUser.photoUrl);
+
+      FirebaseFirestore.instance
+          .collection('livestream')
+          .doc(widget.channelName)
+          .collection('comments')
+          .add({
+        'message': info,
+        'type': type,
+        'user': user,
+        'image': widget.currentUser.photoUrl,
+        'timestamp': Timestamp.now(),
       });
+      // setState(() {
+      //   _infoStrings2.insert(0, m);
+      // });
     }
   }
 }

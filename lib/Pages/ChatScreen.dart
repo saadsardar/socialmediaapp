@@ -1,26 +1,47 @@
+import 'package:agora_rtc_engine/rtc_engine.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:social/Models/Chat.dart';
+import 'package:social/Models/user.dart';
+import 'package:social/Pages/VideoCall.dart';
 import 'package:social/Pages/home.dart';
 
 class ChatScreen extends StatefulWidget {
-  final selfUid1;
-  final friendUid2;
-  ChatScreen(this.selfUid1, this.friendUid2);
+  final String self1;
+  final String friend2;
+  ChatScreen(this.self1, this.friend2);
   @override
   _ChatScreenState createState() => _ChatScreenState();
 }
 
 class _ChatScreenState extends State<ChatScreen> {
+  User userSelf, userFriend;
   String chatId;
-  // ThemeData theme;
+  bool isLoading = true;
   TextEditingController _messageControl;
   @override
   void initState() {
-    // theme = Theme.of(context);
     _messageControl = TextEditingController();
     super.initState();
+  }
+
+  @override
+  void didChangeDependencies() async {
+    // if (isInit == false) {
+    var doc = await usersRef.doc(widget.self1).get();
+    var doc2 = await usersRef.doc(widget.friend2).get();
+    setState(() {
+      userSelf = User.fromDocument(doc);
+      userFriend = User.fromDocument(doc2);
+      chatId = getChatId();
+      print('Data gathered');
+      isLoading = false;
+    });
+    // isInit = true;
+    // }
+    super.didChangeDependencies();
   }
 
   @override
@@ -31,11 +52,11 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   String getChatId() {
-    int i = widget.selfUid1.compareTo(widget.friendUid2);
+    int i = userSelf.id.compareTo(userFriend.id);
     if (i == 1) {
-      return widget.selfUid1 + widget.friendUid2;
+      return userSelf.id + userFriend.id;
     } else {
-      return widget.friendUid2 + widget.selfUid1;
+      return userFriend.id + userSelf.id;
     }
   }
 
@@ -58,7 +79,7 @@ class _ChatScreenState extends State<ChatScreen> {
               bottomRight: isSelf ? Radius.circular(0) : Radius.circular(20),
               bottomLeft: isSelf ? Radius.circular(20) : Radius.circular(0),
             ),
-            color: isSelf ? Theme.of(context).primaryColor : Colors.white,
+            color: isSelf ? Theme.of(context).primaryColor : Colors.grey[300],
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 15),
@@ -91,7 +112,7 @@ class _ChatScreenState extends State<ChatScreen> {
     return Container(
       padding: const EdgeInsets.all(10),
       // margin: const EdgeInsets.all(10),
-      child: chat.from == widget.selfUid1
+      child: chat.from == userSelf.id
           ? Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -150,16 +171,52 @@ class _ChatScreenState extends State<ChatScreen> {
     // print(comment);
     // FocusScope.of(context).unfocus();
     if (message.length != 0) {
-      await FirebaseFirestore.instance.collection('chats').add({
+      await FirebaseFirestore.instance
+          .collection('chats')
+          .doc(userSelf.id)
+          .collection(userFriend.id)
+          .add({
         'chatId': chatId,
-        'to': widget.friendUid2,
-        'from': widget.selfUid1,
+        'to': userFriend.id,
+        'from': userSelf.id,
+        'image': currentUser.photoUrl,
+        'message': message,
+        'timestamp': Timestamp.now(),
+      });
+      _messageControl.clear();
+      await FirebaseFirestore.instance
+          .collection('chats')
+          .doc(userFriend.id)
+          .collection(userSelf.id)
+          .add({
+        'chatId': chatId,
+        'to': userFriend.id,
+        'from': userSelf.id,
         'image': currentUser.photoUrl,
         'message': message,
         'timestamp': Timestamp.now(),
       });
     }
-    _messageControl.clear();
+    await FirebaseFirestore.instance
+        .collection('chats')
+        .doc(userSelf.id)
+        .collection('chats')
+        .doc(userFriend.id)
+        .set({
+      'id': userFriend.id,
+      'name': userFriend.displayName,
+      'picture': userFriend.photoUrl,
+    });
+    await FirebaseFirestore.instance
+        .collection('chats')
+        .doc(userFriend.id)
+        .collection('chats')
+        .doc(userSelf.id)
+        .set({
+      'id': userSelf.id,
+      'name': userSelf.displayName,
+      'picture': userSelf.photoUrl,
+    });
   }
 
   Widget newMessage(String url) {
@@ -211,55 +268,82 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  Future<void> _handleCameraAndMic(Permission permission) async {
+    final status = await permission.request();
+    print(status);
+  }
+
   @override
   Widget build(BuildContext context) {
-    chatId = getChatId();
     return Scaffold(
-      appBar: AppBar(),
-      body: Column(
-        children: [
-          Expanded(
-            child: Container(
-              child: StreamBuilder(
-                stream: FirebaseFirestore.instance
-                    .collection('chats')
-                    // .doc(chatId)
-                    .where('chatId', isEqualTo: chatId)
-                    .snapshots(),
-                builder: (ctx, snap) {
-                  if (snap.connectionState == ConnectionState.waiting) {
-                    return Center(
-                      child: CircularProgressIndicator(),
-                    );
-                  } else {
-                    List<ChatItem> chat = [];
-                    final chatSnapshot = snap.data;
-                    if (chatSnapshot == null) {
-                      Center(child: Text('Start A Conversation'));
-                    }
-                    chatSnapshot.documents.forEach(
-                      (e) {
-                        var map = e.data();
-                        // map['chatId'] = e.id;
-                        chat.add(ChatItem.fromJson(map));
-                      },
-                    );
-                    chat.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-                    return Column(
-                      children: [
-                        for (var item in chat) chatWidget(item),
-                      ],
-                    );
-                  }
-                },
-              ),
-            ),
-          ),
-          Container(
-              margin: const EdgeInsets.all(10),
-              child: newMessage(currentUser.photoUrl)),
+      appBar: AppBar(
+        actions: [
+          IconButton(
+              icon: Icon(Icons.video_call),
+              onPressed: () async {
+                await _handleCameraAndMic(Permission.camera);
+                await _handleCameraAndMic(Permission.microphone);
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (context) => VideoCall(
+                    channelName: chatId,
+                    role: ClientRole.Broadcaster,
+                    currentUser: userSelf,
+                  ),
+                ));
+              }),
         ],
       ),
+      body: isLoading
+          ? Center(
+              child: CircularProgressIndicator(),
+            )
+          : Column(
+              children: [
+                Expanded(
+                  child: Container(
+                    child: StreamBuilder(
+                      stream: FirebaseFirestore.instance
+                          .collection('chats')
+                          .doc(userSelf.id)
+                          .collection(userFriend.id)
+                          // .doc(chatId)
+                          // .where('chatId', isEqualTo: chatId)
+                          .snapshots(),
+                      builder: (ctx, snap) {
+                        if (snap.connectionState == ConnectionState.waiting) {
+                          return Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        } else {
+                          List<ChatItem> chat = [];
+                          final chatSnapshot = snap.data;
+                          if (chatSnapshot == null) {
+                            Center(child: Text('Start A Conversation'));
+                          }
+                          chatSnapshot.documents.forEach(
+                            (e) {
+                              var map = e.data();
+                              // map['chatId'] = e.id;
+                              chat.add(ChatItem.fromJson(map));
+                            },
+                          );
+                          chat.sort(
+                              (a, b) => a.timestamp.compareTo(b.timestamp));
+                          return Column(
+                            children: [
+                              for (var item in chat) chatWidget(item),
+                            ],
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                ),
+                Container(
+                    margin: const EdgeInsets.all(10),
+                    child: newMessage(currentUser.photoUrl)),
+              ],
+            ),
     );
   }
 }

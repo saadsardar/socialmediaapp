@@ -136,10 +136,10 @@ class UserResult extends StatelessWidget {
                     fontSize: 20,
                     fontWeight: FontWeight.bold),
               ),
-              subtitle: Text(
-                user.username,
-                style: TextStyle(color: theme.accentColor, fontSize: 15),
-              ),
+              // subtitle: Text(
+              //   user.username,
+              //   style: TextStyle(color: theme.accentColor, fontSize: 15),
+              // ),
             ),
           ),
           Divider(
