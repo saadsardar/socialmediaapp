@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:social/Pages/call.dart';
 import 'package:social/Pages/search.dart';
-
 import '../Models/user.dart';
 
 class LiveUsers extends StatefulWidget {
@@ -30,15 +29,16 @@ class _LiveUsersState extends State<LiveUsers> {
       print(status);
     }
 
-    gridViewItem() {
+    gridViewItem(String liveStreamUserId) {
       return GestureDetector(
         onTap: () async {
           await _handleCameraAndMic(Permission.camera);
           await _handleCameraAndMic(Permission.microphone);
           Navigator.of(context).push(MaterialPageRoute(
             builder: (context) => CallPage(
-              channelName: 'Testing',
+              channelName: liveStreamUserId,
               role: ClientRole.Audience,
+              currentUser: widget.currentUser,
             ),
           ));
         },
@@ -122,13 +122,12 @@ class _LiveUsersState extends State<LiveUsers> {
                       ),
                       onPressed: () async {
                         await _handleCameraAndMic(Permission.camera);
-
                         await _handleCameraAndMic(Permission.microphone);
-
                         Navigator.of(context).push(MaterialPageRoute(
                           builder: (context) => CallPage(
-                            channelName: 'Testing',
+                            channelName: widget.currentUser.id,
                             role: ClientRole.Broadcaster,
+                            currentUser: widget.currentUser,
                           ),
                         ));
                       }),
@@ -157,7 +156,7 @@ class _LiveUsersState extends State<LiveUsers> {
                       // childAspectRatio: 0.8,
                       crossAxisSpacing: 15),
                   itemCount: 10,
-                  itemBuilder: (ctx, i) => gridViewItem()),
+                  itemBuilder: (ctx, i) => gridViewItem('String ')),
               // ),
             ),
           ),

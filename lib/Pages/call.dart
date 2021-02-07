@@ -7,19 +7,22 @@ import 'package:agora_rtc_engine/rtc_remote_view.dart' as RtcRemoteView;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:social/Models/message.dart';
+import 'package:social/Models/user.dart';
 import 'package:social/Widgets/HearAnim.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 import '../utils/settings.dart';
 
 class CallPage extends StatefulWidget {
   /// non-modifiable channel name of the page
   final String channelName;
+  final User currentUser;
 
   /// non-modifiable client role of the page
   final ClientRole role;
 
   /// Creates a call page with given channel name.
-  const CallPage({Key key, this.channelName = 'Testing', this.role})
+  const CallPage({Key key, this.channelName, this.role, this.currentUser})
       : super(key: key);
 
   @override
@@ -57,15 +60,11 @@ class _CallPageState extends State<CallPage> {
             info: 'APP_ID missing, please provide your APP_ID in settings.dart',
             type: 'notif',
             user: 'System');
-        // _infoStrings.add(
-        //   ,
-        // );
 
         _log(
             info: 'Agora Engine is not starting',
             type: 'notif',
             user: 'System');
-        // _infoStrings.add('');
       });
       return;
     }
@@ -76,26 +75,59 @@ class _CallPageState extends State<CallPage> {
     VideoEncoderConfiguration configuration = VideoEncoderConfiguration();
     configuration.dimensions = VideoDimensions(1920, 1080);
     await _engine.setVideoEncoderConfiguration(configuration);
-    await _engine.joinChannel(Token, widget.channelName, null, 0);
+    String token;
+    if (widget.role == ClientRole.Broadcaster) {
+      print('Going Into Function');
+      print('channel Name: ${widget.channelName}');
+      HttpsCallable callable = FirebaseFunctions.instance.httpsCallable(
+          'onNewToken',
+          options: HttpsCallableOptions(timeout: Duration(seconds: 10)));
+      try {
+        final HttpsCallableResult result = await callable.call(
+          <String, dynamic>{
+            'channelName': widget.channelName,
+          },
+        );
+        print('Returned. Token: ');
+        print(result.data['token']);
+        // setState(() {
+        token = result.data['token'];
+        // });
+      } on FirebaseFunctionsException catch (e) {
+        print('caught firebase functions exception');
+        print(e.code);
+        print(e.message);
+        print(e.details);
+      } catch (e) {
+        print('caught generic exception');
+        print(e);
+      }
+    } else {
+      // get token from firebase
+    }
+    // print('Going to join channel: $token');
+
+    await _engine.joinChannel(token, widget.channelName, null, 0);
   }
 
   /// Create agora sdk instance and initialize
   Future<void> _initAgoraRtcEngine() async {
     print('In initAgora');
     _engine = await RtcEngine.create(APP_ID);
-    print('Created');
+    // print('Created');
     await _engine.enableVideo();
-    print('video enabled');
+    // print('video enabled');
     await _engine.setChannelProfile(ChannelProfile.LiveBroadcasting);
-    print('channel profile');
+    // print('channel profile');
     await _engine.setClientRole(widget.role);
-    print('set client role');
+    // print('set client role');
   }
 
   /// Add agora event handlers
   void _addAgoraEventHandlers() {
     _engine.setEventHandler(RtcEngineEventHandler(error: (code) {
       setState(() {
+        print('Error');
         final info = 'onError: $code';
         _log(info: info, type: 'notif', user: 'System');
         _infoStrings.add(info);
@@ -662,7 +694,7 @@ class _CallPageState extends State<CallPage> {
     try {
       _channelMessageController.clear();
       // await _channel.sendMessage(AgoraRtmMessage.fromText(text));
-      _log(user: widget.channelName, info: text, type: 'message');
+      _log(user: widget.currentUser.displayName, info: text, type: 'message');
     } catch (errorCode) {
       // _log('Send channel message error: ' + errorCode.toString());
     }
@@ -765,7 +797,7 @@ class _CallPageState extends State<CallPage> {
     try {
       _channelMessageController.clear();
       // await _channel.sendMessage(AgoraRtmMessage.fromText(text));
-      _log(user: widget.channelName, info: text, type: 'message');
+      _log(user: widget.currentUser.displayName, info: text, type: 'message');
     } catch (errorCode) {
       //_log(info: 'Send channel message error: ' + errorCode.toString(), type: 'error');
     }
@@ -851,10 +883,13 @@ class _CallPageState extends State<CallPage> {
       );*/
 
     } else {
-      var image =
-          'https://www.teahub.io/photos/full/364-3646192_beautiful-girls-4k-images-dpz-beautiful-pinterest-girls.jpg';
-      Message m =
-          new Message(message: info, type: type, user: user, image: image);
+      // var image =
+      //     'https://www.teahub.io/photos/full/364-3646192_beautiful-girls-4k-images-dpz-beautiful-pinterest-girls.jpg';
+      Message m = new Message(
+          message: info,
+          type: type,
+          user: user,
+          image: widget.currentUser.photoUrl);
       setState(() {
         _infoStrings2.insert(0, m);
       });

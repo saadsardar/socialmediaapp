@@ -141,12 +141,9 @@ class _HomeState extends State<Home> {
     return Scaffold(
       body: PageView(
         children: <Widget>[
-          // FrontPage(currentUser),
           LiveUsers(currentUser),
           FrontPage(currentUser),
-          // Timeline(currentUser: currentUser),
           Upload(currentUser: currentUser),
-          // CallPage()
           ActivityFeed(),
           Profile(
             profileId: currentUser?.id,

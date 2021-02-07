@@ -2,6 +2,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:social/Models/user.dart';
+import 'package:social/Pages/ChatScreen.dart';
+import 'package:social/Pages/PaymentScreen.dart';
 import 'package:social/Widgets/post.dart';
 import 'package:social/Widgets/post_tile.dart';
 import 'package:social/Widgets/progress.dart';
@@ -120,7 +122,7 @@ class _ProfileState extends State<Profile> {
       child: FlatButton(
         onPressed: function,
         child: Container(
-          width: 220.0,
+          width: MediaQuery.of(context).size.width * 0.35,
           height: 27.0,
           child: Text(
             text,
@@ -193,8 +195,14 @@ class _ProfileState extends State<Profile> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            profileOwnerIconItem(Icons.message, () {}),
-            profileOwnerIconItem(Icons.account_balance_wallet, () {}),
+            profileOwnerIconItem(Icons.message, () {
+              // Navigator.of(context)
+              //     .push(MaterialPageRoute(builder: (ctx) => ChatScreen()));
+            }),
+            profileOwnerIconItem(Icons.account_balance_wallet, () {
+              Navigator.of(context)
+                  .push(MaterialPageRoute(builder: (ctx) => PaymentScreen()));
+            }),
             // profileOwnerIconItem(Icons.add_a_photo_rounded, () {
             //   Navigator.of(context).push(
             //     MaterialPageRoute(
@@ -222,9 +230,21 @@ class _ProfileState extends State<Profile> {
         // ),
       );
     } else if (isFollowing) {
-      return buildButton(
-        text: "Unfollow",
-        function: handleUnfollowUser,
+      return Row(
+        children: [
+          buildButton(
+            text: "Unfollow",
+            function: handleUnfollowUser,
+          ),
+          buildButton(
+            text: "Message",
+            function: () {
+              Navigator.of(context).push(MaterialPageRoute(
+                  builder: (ctx) =>
+                      ChatScreen(currentUserId, widget.profileId)));
+            },
+          ),
+        ],
       );
     } else if (!isFollowing) {
       return buildButton(

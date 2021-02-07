@@ -1,5 +1,7 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
+const { RtcTokenBuilder, RtmTokenBuilder, RtcRole, RtmRole } = require('agora-access-token');
+// const stripe = require('stripe')(functions.config().stripe.testkey)
 admin.initializeApp();
 
 // // Create and Deploy Your First Cloud Functions
@@ -161,3 +163,84 @@ exports.onDeletePost = functions.firestore
         });
     });
   });
+
+  exports.onNewToken = functions.https.onCall((data, context) => {
+// exports.onNewToken = async (req, res) => {
+  const appID = '4422fee539f04b57a718c953f7fd7ed0';
+
+  const appCertificate = '70d0302eef154fed8e56538b99148959';
+  const channelName = data.channelName;
+  console.log('Channel Name:');
+  console.log(channelName);
+  // const uid = parseInt(data.channelName);
+  const uid = 0;
+  const account = "2882341273";
+  const role = RtcRole.PUBLISHER;
+  const expirationTimeInSeconds = 3600
+  const currentTimestamp = Math.floor(Date.now() / 1000)
+  const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds
+  // IMPORTANT! Build token with either the uid or with the user account. Comment out the option you do not want to use below.
+  // Build token with uid
+  const tokenA = RtcTokenBuilder.buildTokenWithUid(appID, appCertificate, channelName, uid, role, privilegeExpiredTs);
+  console.log("Token With Integer Number Uid: " + tokenA);
+
+  return { 'token': tokenA };
+  // Build token with user account
+  // const tokenB = RtcTokenBuilder.buildTokenWithAccount(appID, appCertificate, channelName, account, role, privilegeExpiredTs);
+  // console.log("Token With UserAccount: " + tokenB);
+})
+
+exports.StripePI = functions.https.onRequest(async (req, res) => {
+
+  const stripeVendorAccount = 'acct_123123123';
+  stripe.paymentMethods.create(
+    {
+      payment_method: req.query.paym,
+    }, {
+    stripeAccount: stripeVendorAccount
+  },
+    function (err, clonedPaymentMethod) {
+      if (err !== null) {
+        console.log('Error clone: ', err);
+        res.send('error');
+      } else {
+        console.log('clonedPaymentMethod: ', clonedPaymentMethod);
+
+        const fee = (req.query.amount / 100) | 0;
+        stripe.paymentIntents.create(
+          {
+            amount: req.query.amount,
+            currency: req.query.currency,
+            payment_method: clonedPaymentMethod.id,
+            confirmation_method: 'automatic',
+            confirm: true,
+            application_fee_amount: fee,
+            description: req.query.description,
+          }, {
+          stripeAccount: stripeVendorAccount
+        },
+          function (err, paymentIntent) {
+            // asynchronously called
+            const paymentIntentReference = paymentIntent;
+            if (err !== null) {
+              console.log('Error payment Intent: ', err);
+              res.send('error');
+            } else {
+              console.log('Created paymentintent: ', paymentIntent);
+              res.json({
+                paymentIntent: paymentIntent,
+                stripeAccount: stripeVendorAccount
+              });
+            }
+          });
+
+        res.send('error');
+
+      }
+    })
+});
+
+// exports.StripePI = functions.https.onRequest(async (req, res) => {  res.send('error');});
+
+
+
