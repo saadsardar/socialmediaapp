@@ -78,6 +78,7 @@ class CommentsState extends State<Comments> {
         "username": currentUser.username,
         "userProfileImg": currentUser.photoUrl,
         "mediaUrl": postMediaUrl,
+        "ownerId": postOwnerId,
       });
     }
     commentController.clear();

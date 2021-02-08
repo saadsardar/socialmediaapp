@@ -17,9 +17,11 @@ class ActivityFeed extends StatefulWidget {
 
 class _ActivityFeedState extends State<ActivityFeed> {
   // ignore: missing_return
+
   Future<List<ActivityFeedItem>> getActivityFeed() async {
     List<ActivityFeedItem> feedItems = [];
     try {
+      print('In Get Feed Items');
       QuerySnapshot snapshot = await activityFeedRef
           .doc(currentUser.id)
           .collection('feedItems')
@@ -31,9 +33,9 @@ class _ActivityFeedState extends State<ActivityFeed> {
 
       snapshot.docs.forEach((doc) {
         //print('${doc.data()}');
-        //print("Yahan phans raha hai");
+        // print("Yahan phans raha hai");
         feedItems.add(ActivityFeedItem.fromDocument(doc));
-        //print(feedItems);
+        // print('feedItems');
       });
       // return feedItems;
     } catch (e) {
@@ -52,6 +54,7 @@ class _ActivityFeedState extends State<ActivityFeed> {
 
   @override
   Widget build(BuildContext context) {
+    print('In Notif Screen');
     return Scaffold(
       //backgroundColor: Colors.orange,
       // appBar: header(context, titleText: "Activity Feed"),
@@ -115,7 +118,7 @@ class ActivityFeedItem extends StatelessWidget {
       this.ownerId});
 
   factory ActivityFeedItem.fromDocument(DocumentSnapshot doc) {
-    //print('${doc['username']}');
+    // print('${doc['username']}');
     return ActivityFeedItem(
       username: doc['username'],
       userId: doc['userId'],

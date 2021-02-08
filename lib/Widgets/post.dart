@@ -239,6 +239,7 @@ class _PostState extends State<Post> {
         "postId": postId,
         "mediaUrl": mediaUrl,
         "timestamp": timestamp,
+        "ownerId": ownerId,
       });
     }
   }
