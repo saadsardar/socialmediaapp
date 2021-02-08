@@ -30,6 +30,7 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   bool isAuth = false;
+  bool isInit = false;
   PageController pageController;
   int pageIndex = 0;
 
@@ -41,16 +42,16 @@ class _HomeState extends State<Home> {
     googleSignIn.onCurrentUserChanged.listen(
       (account) {
         if (account != null) {
-          setState(() {
-            // print("user $account");
-            isAuth = true;
-          });
+          // setState(() {
+          // print("user $account");
+          isAuth = true;
+          isInit = true;
+          // });
         } else {
-          setState(
-            () {
-              isAuth = false;
-            },
-          );
+          setState(() {
+            isInit = true;
+            isAuth = false;
+          });
         }
       },
     );
@@ -58,12 +59,18 @@ class _HomeState extends State<Home> {
       handleSignIn(account);
     }, onError: (err) {
       print('Error signing in: $err');
+      setState(() {
+        isInit = true;
+      });
     });
     // Reauthenticate user when app is opened
     googleSignIn.signInSilently(suppressErrors: false).then((account) {
       handleSignIn(account);
     }).catchError((err) {
       print('Error signing in: $err');
+      setState(() {
+        isInit = true;
+      });
     });
   }
 
@@ -71,10 +78,12 @@ class _HomeState extends State<Home> {
     if (account != null) {
       await createUserInFirestore();
       setState(() {
+        isInit = true;
         isAuth = true;
       });
     } else {
       setState(() {
+        isInit = true;
         isAuth = false;
       });
     }
@@ -206,16 +215,19 @@ class _HomeState extends State<Home> {
             // ),
             Divider(),
             GestureDetector(
-              child: Container(
-                width: 300,
-                height: 50,
-                decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage('assets/images/google_signin_button.png'),
-                    fit: BoxFit.contain,
-                  ),
-                ),
-              ),
+              child: isInit
+                  ? Container(
+                      width: 300,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        image: DecorationImage(
+                          image: AssetImage(
+                              'assets/images/google_signin_button.png'),
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    )
+                  : Container(),
               onTap: login,
             ),
           ],
@@ -224,8 +236,27 @@ class _HomeState extends State<Home> {
     );
   }
 
+  Scaffold splashScreen() {
+    return Scaffold(
+      backgroundColor: Theme.of(context).primaryColor,
+      body: Container(
+        alignment: Alignment.center,
+        margin: const EdgeInsets.symmetric(horizontal: 15),
+        child: Image.asset(
+          'assets/images/logo.png',
+          fit: BoxFit.contain,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return isAuth ? buildAuthScreen() : buildUnAuthScreen();
+    print('IsInit: $isInit  isAuth: $isAuth');
+    return
+        // !isInit
+        //     ? splashScreen()
+        // :
+        isAuth ? buildAuthScreen() : buildUnAuthScreen();
   }
 }

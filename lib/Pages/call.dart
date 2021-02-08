@@ -9,6 +9,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:social/Models/message.dart';
 import 'package:social/Models/user.dart';
+import 'package:social/Pages/GiftCoinsScreen.dart';
 import 'package:social/Widgets/HearAnim.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
@@ -704,23 +705,32 @@ class _CallPageState extends State<CallPage> {
                 padding: const EdgeInsets.all(12.0),
               ),
             ),
-            // if (accepted == false)
-            //   Padding(
-            //     padding: const EdgeInsets.fromLTRB(4.0, 0, 0, 0),
-            //     child: MaterialButton(
-            //       minWidth: 0,
-            //       onPressed: () {},
-            //       child: Icon(
-            //         Icons.person_add,
-            //         color: Colors.white,
-            //         size: 20.0,
-            //       ),
-            //       shape: CircleBorder(),
-            //       elevation: 2.0,
-            //       color: Colors.blue[400],
-            //       padding: const EdgeInsets.all(12.0),
-            //     ),
-            //   ),
+            if (widget.channelName != widget.currentUser.id)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4.0, 0, 0, 0),
+                child: MaterialButton(
+                  minWidth: 0,
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (ctx) => GiftCoinsScreen(
+                          senderUserId: widget.currentUser.id,
+                          receiverUserId: widget.channelName,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Icon(
+                    Icons.card_giftcard_outlined,
+                    color: Colors.white,
+                    size: 20.0,
+                  ),
+                  shape: CircleBorder(),
+                  elevation: 2.0,
+                  color: Colors.blue[400],
+                  padding: const EdgeInsets.all(12.0),
+                ),
+              ),
             Padding(
               padding: const EdgeInsets.fromLTRB(4.0, 0, 0, 0),
               child: MaterialButton(
