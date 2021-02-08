@@ -2,11 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class User {
   final String id;
-  final String username;
-  final String email;
-  final String photoUrl;
-  final String displayName;
-  final String bio;
+  String username;
+  String email;
+  String photoUrl;
+  String displayName;
+  String bio;
+  int coins;
 
   User({
     this.id,
@@ -15,6 +16,7 @@ class User {
     this.photoUrl,
     this.displayName,
     this.bio,
+    this.coins,
   });
 
   factory User.fromDocument(DocumentSnapshot doc) {
@@ -25,6 +27,7 @@ class User {
       photoUrl: doc['photoUrl'],
       displayName: doc['displayName'],
       bio: doc['bio'],
+      coins: doc['coins'],
     );
   }
 }

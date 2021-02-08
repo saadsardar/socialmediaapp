@@ -1,9 +1,10 @@
-import 'dart:convert';
+// import 'dart:convert';
 
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:social/Models/shoedialog.dart';
 import 'package:stripe_payment/stripe_payment.dart';
-import 'package:http/http.dart' as http;
+// import 'package:http/http.dart' as http;
 
 class PaymentScreen extends StatefulWidget {
   static const routeName = '/payment';
@@ -24,6 +25,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       'https://us-central1-demostripe-b9557.cloudfunctions.net/StripePI';
 
   void initState() {
+    print('Init State');
     super.initState();
     StripePayment.setOptions(
       StripeOptions(
@@ -37,99 +39,210 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Future<void> processPaymentAsDirectCharge(PaymentMethod paymentMethod) async {
+    print('processPaymentAsDirectCharge');
     setState(() {
       showSpinner = true;
     });
     //step 2: request to create PaymentIntent, attempt to confirm the payment & return PaymentIntent
-    final http.Response response = await http
-        .post('$url?amount=$amount&currency=GBP&paym=${paymentMethod.id}');
-    print('Now i decode');
-    if (response.body != null && response.body != 'error') {
-      final paymentIntentX = jsonDecode(response.body);
-      final status = paymentIntentX['paymentIntent']['status'];
-      final strAccount = paymentIntentX['stripeAccount'];
-      //step 3: check if payment was succesfully confirmed
-      if (status == 'succeeded') {
-        //payment was confirmed by the server without need for futher authentification
-        StripePayment.completeNativePayRequest();
-        setState(() {
-          text =
-              'Payment completed. ${paymentIntentX['paymentIntent']['amount'].toString()}p succesfully charged';
-          showSpinner = false;
-        });
-      } else {
-        //step 4: there is a need to authenticate
-        StripePayment.setStripeAccount(strAccount);
-        await StripePayment.confirmPaymentIntent(PaymentIntent(
-                paymentMethodId: paymentIntentX['paymentIntent']
-                    ['payment_method'],
-                clientSecret: paymentIntentX['paymentIntent']['client_secret']))
-            .then(
-          (PaymentIntentResult paymentIntentResult) async {
-            //This code will be executed if the authentication is successful
-            //step 5: request the server to confirm the payment with
-            final statusFinal = paymentIntentResult.status;
-            if (statusFinal == 'succeeded') {
-              StripePayment.completeNativePayRequest();
-              setState(() {
-                showSpinner = false;
-              });
-            } else if (statusFinal == 'processing') {
-              StripePayment.cancelNativePayRequest();
-              setState(() {
-                showSpinner = false;
-              });
-              showDialog(
-                  context: context,
-                  builder: (BuildContext context) => ShowDialogToDismiss(
-                      title: 'Warning',
-                      content:
-                          'The payment is still in \'processing\' state. This is unusual. Please contact us',
-                      buttonText: 'CLOSE'));
-            } else {
-              StripePayment.cancelNativePayRequest();
-              setState(() {
-                showSpinner = false;
-              });
-              showDialog(
-                  context: context,
-                  builder: (BuildContext context) => ShowDialogToDismiss(
-                      title: 'Error',
-                      content:
-                          'There was an error to confirm the payment. Details: $statusFinal',
-                      buttonText: 'CLOSE'));
-            }
-          },
-          //If Authentication fails, a PlatformException will be raised which can be handled here
-        ).catchError((e) {
-          //case B1
-          StripePayment.cancelNativePayRequest();
+    HttpsCallable callable = FirebaseFunctions.instance.httpsCallable(
+        'onStripePI',
+        options: HttpsCallableOptions(timeout: Duration(seconds: 10)));
+    try {
+      final HttpsCallableResult result = await callable.call(
+        <String, dynamic>{
+          'amount': amount,
+          'currency': 'GBP',
+          'paym': paymentMethod.id,
+        },
+      );
+      print('Decode');
+      print(result.data);
+      if (result.data != null && result.data != 'error') {
+        final paymentIntentX = result.data;
+        final status = paymentIntentX['paymentIntent']['status'];
+        final strAccount = paymentIntentX['stripeAccount'];
+        if (status == 'succeeded') {
+          //payment was confirmed by the server without need for futher authentification
+          StripePayment.completeNativePayRequest();
           setState(() {
+            text =
+                'Payment completed. ${paymentIntentX['paymentIntent']['amount'].toString()}p succesfully charged';
             showSpinner = false;
           });
-          showDialog(
-              context: context,
-              builder: (BuildContext context) => ShowDialogToDismiss(
-                  title: 'Error',
-                  content:
-                      'There was an error to confirm the payment. Please try again with another card',
-                  buttonText: 'CLOSE'));
+        } else {
+          //step 4: there is a need to authenticate
+          StripePayment.setStripeAccount(strAccount);
+          await StripePayment.confirmPaymentIntent(PaymentIntent(
+                  paymentMethodId: paymentIntentX['paymentIntent']
+                      ['payment_method'],
+                  clientSecret: paymentIntentX['paymentIntent']
+                      ['client_secret']))
+              .then(
+            (PaymentIntentResult paymentIntentResult) async {
+              //This code will be executed if the authentication is successful
+              //step 5: request the server to confirm the payment with
+              final statusFinal = paymentIntentResult.status;
+              if (statusFinal == 'succeeded') {
+                StripePayment.completeNativePayRequest();
+                setState(() {
+                  showSpinner = false;
+                });
+              } else if (statusFinal == 'processing') {
+                StripePayment.cancelNativePayRequest();
+                setState(() {
+                  showSpinner = false;
+                });
+                showDialog(
+                    context: context,
+                    builder: (BuildContext context) => ShowDialogToDismiss(
+                        title: 'Warning',
+                        content:
+                            'The payment is still in \'processing\' state. This is unusual. Please contact us',
+                        buttonText: 'CLOSE'));
+              } else {
+                StripePayment.cancelNativePayRequest();
+                setState(() {
+                  showSpinner = false;
+                });
+                showDialog(
+                    context: context,
+                    builder: (BuildContext context) => ShowDialogToDismiss(
+                        title: 'Error',
+                        content:
+                            'There was an error to confirm the payment. Details: $statusFinal',
+                        buttonText: 'CLOSE'));
+              }
+            },
+            //If Authentication fails, a PlatformException will be raised which can be handled here
+          ).catchError((e) {
+            //case B1
+            StripePayment.cancelNativePayRequest();
+            setState(() {
+              showSpinner = false;
+            });
+            showDialog(
+                context: context,
+                builder: (BuildContext context) => ShowDialogToDismiss(
+                    title: 'Error',
+                    content:
+                        'There was an error to confirm the payment. Please try again with another card',
+                    buttonText: 'CLOSE'));
+          });
+        }
+      } else {
+        //case A
+        StripePayment.cancelNativePayRequest();
+        setState(() {
+          showSpinner = false;
         });
+        showDialog(
+            context: context,
+            builder: (BuildContext context) => ShowDialogToDismiss(
+                title: 'Error',
+                content:
+                    'There was an error in creating the payment. Please try again with another card',
+                buttonText: 'CLOSE'));
       }
-    } else {
-      //case A
-      StripePayment.cancelNativePayRequest();
-      setState(() {
-        showSpinner = false;
-      });
-      showDialog(
-          context: context,
-          builder: (BuildContext context) => ShowDialogToDismiss(
-              title: 'Error',
-              content:
-                  'There was an error in creating the payment. Please try again with another card',
-              buttonText: 'CLOSE'));
+    } on FirebaseFunctionsException catch (e) {
+      print('caught firebase functions exception');
+      print(e.code);
+      print(e.message);
+      print(e.details);
+    } catch (e) {
+      print('caught generic exception');
+      print(e);
     }
+
+    // final http.Response response = await http
+    //     .post('$url?amount=$amount&currency=GBP&paym=${paymentMethod.id}');
+    // print('Now i decode');
+    // if (response.body != null && response.body != 'error') {
+    //   final paymentIntentX = jsonDecode(response.body);
+    //   final status = paymentIntentX['paymentIntent']['status'];
+    //   final strAccount = paymentIntentX['stripeAccount'];
+    //   //step 3: check if payment was succesfully confirmed
+    // if (status == 'succeeded') {
+    //   //payment was confirmed by the server without need for futher authentification
+    //   StripePayment.completeNativePayRequest();
+    //   setState(() {
+    //     text =
+    //         'Payment completed. ${paymentIntentX['paymentIntent']['amount'].toString()}p succesfully charged';
+    //     showSpinner = false;
+    //   });
+    // }
+    //   else {
+    //     //step 4: there is a need to authenticate
+    //     StripePayment.setStripeAccount(strAccount);
+    //     await StripePayment.confirmPaymentIntent(PaymentIntent(
+    //             paymentMethodId: paymentIntentX['paymentIntent']
+    //                 ['payment_method'],
+    //             clientSecret: paymentIntentX['paymentIntent']['client_secret']))
+    //         .then(
+    //       (PaymentIntentResult paymentIntentResult) async {
+    //         //This code will be executed if the authentication is successful
+    //         //step 5: request the server to confirm the payment with
+    //         final statusFinal = paymentIntentResult.status;
+    //         if (statusFinal == 'succeeded') {
+    //           StripePayment.completeNativePayRequest();
+    //           setState(() {
+    //             showSpinner = false;
+    //           });
+    //         } else if (statusFinal == 'processing') {
+    //           StripePayment.cancelNativePayRequest();
+    //           setState(() {
+    //             showSpinner = false;
+    //           });
+    //           showDialog(
+    //               context: context,
+    //               builder: (BuildContext context) => ShowDialogToDismiss(
+    //                   title: 'Warning',
+    //                   content:
+    //                       'The payment is still in \'processing\' state. This is unusual. Please contact us',
+    //                   buttonText: 'CLOSE'));
+    //         } else {
+    //           StripePayment.cancelNativePayRequest();
+    //           setState(() {
+    //             showSpinner = false;
+    //           });
+    //           showDialog(
+    //               context: context,
+    //               builder: (BuildContext context) => ShowDialogToDismiss(
+    //                   title: 'Error',
+    //                   content:
+    //                       'There was an error to confirm the payment. Details: $statusFinal',
+    //                   buttonText: 'CLOSE'));
+    //         }
+    //       },
+    //       //If Authentication fails, a PlatformException will be raised which can be handled here
+    //     ).catchError((e) {
+    //       //case B1
+    //       StripePayment.cancelNativePayRequest();
+    //       setState(() {
+    //         showSpinner = false;
+    //       });
+    //       showDialog(
+    //           context: context,
+    //           builder: (BuildContext context) => ShowDialogToDismiss(
+    //               title: 'Error',
+    //               content:
+    //                   'There was an error to confirm the payment. Please try again with another card',
+    //               buttonText: 'CLOSE'));
+    //     });
+    //   }
+    // } else {
+    //   //case A
+    //   StripePayment.cancelNativePayRequest();
+    //   setState(() {
+    //     showSpinner = false;
+    //   });
+    //   showDialog(
+    //       context: context,
+    //       builder: (BuildContext context) => ShowDialogToDismiss(
+    //           title: 'Error',
+    //           content:
+    //               'There was an error in creating the payment. Please try again with another card',
+    //           buttonText: 'CLOSE'));
+    // }
   }
 
   Future<void> createPaymentMethodNative() async {
@@ -190,6 +303,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Future<void> createPaymentMethod() async {
+    print('Create Payment Method');
     StripePayment.setStripeAccount(null);
     tax = ((totalCost * taxPercent) * 100).ceil() / 100;
     amount = ((totalCost + tip + tax) * 100).toInt();
@@ -223,8 +337,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
         ? createPaymentMethodNative()
         : createPaymentMethod();
   }
-
-  void payment() {}
 
   @override
   Widget build(BuildContext context) {

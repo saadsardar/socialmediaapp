@@ -4,10 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:social/Models/user.dart';
 import 'package:social/Pages/AllChatsScreen.dart';
 import 'package:social/Pages/ChatScreen.dart';
-import 'package:social/Pages/PaymentScreen.dart';
+import 'package:social/Pages/GiftCoinsScreen.dart';
 import 'package:social/Widgets/post.dart';
 import 'package:social/Widgets/post_tile.dart';
 import 'package:social/Widgets/progress.dart';
+import 'PaymentScreen2.dart';
 import 'edit_profile.dart';
 import 'home.dart';
 
@@ -124,7 +125,7 @@ class _ProfileState extends State<Profile> {
       child: FlatButton(
         onPressed: function,
         child: Container(
-          width: MediaQuery.of(context).size.width * 0.35,
+          width: MediaQuery.of(context).size.width * 0.2,
           height: 27.0,
           child: Text(
             text,
@@ -204,8 +205,12 @@ class _ProfileState extends State<Profile> {
                       )));
             }),
             profileOwnerIconItem(Icons.account_balance_wallet, () {
-              Navigator.of(context)
-                  .push(MaterialPageRoute(builder: (ctx) => PaymentScreen()));
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (ctx) =>
+                      PaymentScreen2(currentUserId: currentUser.id),
+                ),
+              );
             }),
             // profileOwnerIconItem(Icons.add_a_photo_rounded, () {
             //   Navigator.of(context).push(
@@ -234,27 +239,36 @@ class _ProfileState extends State<Profile> {
         // ),
       );
     } else {
-      return Row(
-        children: [
-          isFollowing
-              ? buildButton(
+      return isFollowing
+          ? Row(
+              children: [
+                buildButton(
                   text: "Unfollow",
                   function: handleUnfollowUser,
-                )
-              : buildButton(
-                  text: "Follow",
-                  function: handleFollowUser,
                 ),
-          buildButton(
-            text: "Message",
-            function: () {
-              Navigator.of(context).push(MaterialPageRoute(
-                  builder: (ctx) =>
-                      ChatScreen(currentUser.id, profileUser.id)));
-            },
-          ),
-        ],
-      );
+                buildButton(
+                  text: "Message",
+                  function: () {
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (ctx) =>
+                            ChatScreen(currentUser.id, profileUser.id)));
+                  },
+                ),
+                buildButton(
+                  text: "Gift",
+                  function: () {
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (ctx) => GiftCoinsScreen(
+                            senderUserId: currentUser.id,
+                            receiverUserId: profileUser.id)));
+                  },
+                ),
+              ],
+            )
+          : buildButton(
+              text: "Follow",
+              function: handleFollowUser,
+            );
     }
   }
 
