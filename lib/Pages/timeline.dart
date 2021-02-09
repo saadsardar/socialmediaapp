@@ -61,28 +61,35 @@ class _TimelineState extends State<Timeline> {
   }
 
   getPosts() async {
-     print("1111");
-    QuerySnapshot snapshot = await postsRef.get();
-    final data = snapshot.docs;
+    print("1111");
+    final snap = await FirebaseFirestore.instance.collection('users').get();
+    // QuerySnapshot snapshot = await postsRef.get();
+    final data = snap.docs;
+    // print('Data : $data');
     data.forEach(
       (e) async {
-        var id = e.id;
-        //print("id is $id");
+        final id = e.id;
+        print("id is $id");
         QuerySnapshot snapshot2 =
             await postsRef.doc(id).collection('userPosts').get();
-        //final data2 = snapshot2.docs;
-        // data.forEach((e) {
-        //   e.data();
-        List<Post> 
-        posts =
-            snapshot2.docs.map((doc) => Post.fromDocument(doc)).toList();
-        setState(() {
-          this.posts = posts;
-        });
+        if (snapshot2 != null) {
+          //final data2 = snapshot2.docs;
+          // data.forEach((e) {
+          //   e.data();
+          final posts1 =
+              snapshot2.docs.map((doc) => Post.fromDocument(doc)).toList();
+          posts1.forEach((e) {
+            posts.add(e);
+          });
+          // this.posts += posts1;
+        }
         //});
         // var map = e.data();
       },
     );
+    setState(() {
+      // this.posts = posts;
+    });
   }
 
   //.doc(currentUser.id)
