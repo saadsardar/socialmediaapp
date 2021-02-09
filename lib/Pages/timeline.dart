@@ -22,11 +22,13 @@ class Timeline extends StatefulWidget {
 class _TimelineState extends State<Timeline> {
   List<Post> posts;
   List<String> followingList = [];
+  // List<String> postsList = [];
 
   @override
   void initState() {
     super.initState();
-    getTimeline();
+    //getTimeline();
+    getPosts();
     getFollowing();
   }
 
@@ -35,18 +37,18 @@ class _TimelineState extends State<Timeline> {
     super.dispose();
   }
 
-  getTimeline() async {
-    QuerySnapshot snapshot = await timelineRef
-        .doc(widget.currentUser.id)
-        .collection('timelinePosts')
-        .orderBy('timestamp', descending: true)
-        .get();
-    List<Post> posts =
-        snapshot.docs.map((doc) => Post.fromDocument(doc)).toList();
-    setState(() {
-      this.posts = posts;
-    });
-  }
+  // getTimeline() async {
+  //   QuerySnapshot snapshot = await timelineRef
+  //       .doc(widget.currentUser.id)
+  //       .collection('timelinePosts')
+  //       .orderBy('timestamp', descending: true)
+  //       .get();
+  //   List<Post> posts =
+  //       snapshot.docs.map((doc) => Post.fromDocument(doc)).toList();
+  //   setState(() {
+  //     this.posts = posts;
+  //   });
+  // }
 
   getFollowing() async {
     QuerySnapshot snapshot = await followingRef
@@ -57,6 +59,38 @@ class _TimelineState extends State<Timeline> {
       followingList = snapshot.docs.map((doc) => doc.id).toList();
     });
   }
+
+  getPosts() async {
+     print("1111");
+    QuerySnapshot snapshot = await postsRef.get();
+    final data = snapshot.docs;
+    data.forEach(
+      (e) async {
+        var id = e.id;
+        //print("id is $id");
+        QuerySnapshot snapshot2 =
+            await postsRef.doc(id).collection('userPosts').get();
+        //final data2 = snapshot2.docs;
+        // data.forEach((e) {
+        //   e.data();
+        List<Post> 
+        posts =
+            snapshot2.docs.map((doc) => Post.fromDocument(doc)).toList();
+        setState(() {
+          this.posts = posts;
+        });
+        //});
+        // var map = e.data();
+      },
+    );
+  }
+
+  //.doc(currentUser.id)
+  // .collection('userFollowing')
+  // .get();
+  // setState(() {
+  //   postsList = snapshot.docs.map((doc) => doc.id).toList();
+  // });
 
   buildTimeline() {
     if (posts == null) {
@@ -131,6 +165,6 @@ class _TimelineState extends State<Timeline> {
     return Scaffold(
         // appBar: header(context, isAppTitle: true),
         body: RefreshIndicator(
-            onRefresh: () => getTimeline(), child: buildTimeline()));
+            onRefresh: () => getPosts(), child: buildTimeline()));
   }
 }
