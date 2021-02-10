@@ -28,9 +28,9 @@ class _TimelineState extends State<Timeline> {
   @override
   void initState() {
     super.initState();
-    //getTimeline();
+    getTimeline();
     // getPosts();
-    // getFollowing();
+    getFollowing();
   }
 
   @override
@@ -38,18 +38,18 @@ class _TimelineState extends State<Timeline> {
     super.dispose();
   }
 
-  // getTimeline() async {
-  //   QuerySnapshot snapshot = await timelineRef
-  //       .doc(widget.currentUser.id)
-  //       .collection('timelinePosts')
-  //       .orderBy('timestamp', descending: true)
-  //       .get();
-  //   List<Post> posts =
-  //       snapshot.docs.map((doc) => Post.fromDocument(doc)).toList();
-  //   setState(() {
-  //     this.posts = posts;
-  //   });
-  // }
+  getTimeline() async {
+    QuerySnapshot snapshot = await timelineRef
+        .doc(widget.currentUser.id)
+        .collection('timelinePosts')
+        .orderBy('timestamp', descending: true)
+        .get();
+    List<Post> posts =
+        snapshot.docs.map((doc) => Post.fromDocument(doc)).toList();
+    setState(() {
+      this.posts = posts;
+    });
+  }
 
   getFollowing() async {
     QuerySnapshot snapshot = await followingRef
@@ -61,52 +61,52 @@ class _TimelineState extends State<Timeline> {
     // });
   }
 
-  getPosts() async {
-    // posts.clear();
-    List<Post> posts1 = [];
-    print("In getpost");
-    final snap = await FirebaseFirestore.instance.collection('users').get();
-    // QuerySnapshot snapshot = await postsRef.get();
-    final data = snap.docs;
-    // print('Data : $data');
+  // getPosts() async {
+  //   // posts.clear();
+  //   List<Post> posts1 = [];
+  //   print("In getpost");
+  //   final snap = await FirebaseFirestore.instance.collection('users').get();
+  //   // QuerySnapshot snapshot = await postsRef.get();
+  //   final data = snap.docs;
+  //   // print('Data : $data');
 
-    for (var e in data) {
-      final id = e.id;
-      // print("id is $id");
-      QuerySnapshot snapshot2 =
-          await postsRef.doc(id).collection('userPosts').get();
-      if (snapshot2 != null) {
-        final data2 = snapshot2.docs;
-        data2.forEach((e) {
-          //var map= e.data();
-          posts1.add(Post.fromDocument(e));
-          // print(posts);
-        });
-      }
-    }
-    // isInit = true;
-    //   e.data();
-    // List<Post> posts1 =
-    //     snapshot2.docs.map((doc) => Post.fromDocument(doc)).toList();
+  //   for (var e in data) {
+  //     final id = e.id;
+  //     // print("id is $id");
+  //     QuerySnapshot snapshot2 =
+  //         await postsRef.doc(id).collection('userPosts').get();
+  //     if (snapshot2 != null) {
+  //       final data2 = snapshot2.docs;
+  //       data2.forEach((e) {
+  //         //var map= e.data();
+  //         posts1.add(Post.fromDocument(e));
+  //         // print(posts);
+  //       });
+  //     }
+  //   }
+  //   // isInit = true;
+  //   //   e.data();
+  //   // List<Post> posts1 =
+  //   //     snapshot2.docs.map((doc) => Post.fromDocument(doc)).toList();
 
-    // posts1.forEach((e) {
-    //   if(e != null)
-    //   {posts.add(e);
-    //   print(e);}
-    // });
-    //print(posts1);
-    // posts.add(posts1);
-    // this.posts += posts1;
-    //}
-    //});
-    // var map = e.data();
-    //   },
-    // );
-    isInit = true;
-    setState(() {
-      this.posts = posts1;
-    });
-  }
+  //   // posts1.forEach((e) {
+  //   //   if(e != null)
+  //   //   {posts.add(e);
+  //   //   print(e);}
+  //   // });
+  //   //print(posts1);
+  //   // posts.add(posts1);
+  //   // this.posts += posts1;
+  //   //}
+  //   //});
+  //   // var map = e.data();
+  //   //   },
+  //   // );
+  //   isInit = true;
+  //   setState(() {
+  //     this.posts = posts1;
+  //   });
+  // }
 
   //.doc(currentUser.id)
   // .collection('userFollowing')
@@ -197,14 +197,14 @@ class _TimelineState extends State<Timeline> {
   Widget build(context) {
     if (!isInit) {
       print('Not isinit');
-      getPosts();
+      // getPosts();
       getFollowing();
     }
     return Scaffold(
-      // appBar: header(context, isAppTitle: true),
-      body: buildTimeline(),
-    );
-    // RefreshIndicator(
-    //     onRefresh: () => getPosts(), child: buildTimeline()));
+        body: RefreshIndicator(
+            onRefresh: () => getTimeline(), child: buildTimeline())
+        // appBar: header(context, isAppTitle: true),
+        // body: buildTimeline(),
+        );
   }
 }

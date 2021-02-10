@@ -164,7 +164,7 @@ exports.onDeletePost = functions.firestore
         });
     });
   });
-  exports.onCreateActivityFeedItem = functions.firestore
+exports.onCreateActivityFeedItem = functions.firestore
   .document("/feed/{userId}/feedItems/{activityFeedItem}")
   .onCreate(async (snapshot, context) => {
     console.log("Activity Feed Item Created", snapshot.data());
@@ -190,9 +190,8 @@ exports.onDeletePost = functions.firestore
       // 3) switch body value based off of notification type
       switch (activityFeedItem.type) {
         case "comment":
-          body = `${activityFeedItem.username} replied: ${
-            activityFeedItem.commentData
-          }`;
+          body = `${activityFeedItem.username} replied: ${activityFeedItem.commentData
+            }`;
           break;
         case "like":
           body = `${activityFeedItem.username} liked your post`;
@@ -223,11 +222,11 @@ exports.onDeletePost = functions.firestore
           console.log("Error sending message", error);
         });
     }
-  }); 
-  exports.onCreateChat = functions.firestore
+  });
+exports.onCreateChat = functions.firestore
   .document("/chats/{to}/{from}/{messages}")
   .onCreate(async (snapshot, context) => {
-    console.log("chat Item Created", snapshot.data()); 
+    console.log("chat Item Created", snapshot.data());
 
     // 1) Get user connected to the feed
     const userId = context.params.to;
@@ -248,10 +247,9 @@ exports.onDeletePost = functions.firestore
       let body;
 
       // 3) switch body value based off of notification type
-          body = `${doc.username} sent: ${
-            activityFeedItem.message
-          }`;
-      
+      body = `${doc.username} sent: ${activityFeedItem.message
+        }`;
+
 
       // 4) Create message for push notification
       const message = {
@@ -272,16 +270,20 @@ exports.onDeletePost = functions.firestore
           console.log("Error sending message", error);
         });
     }
-  }); 
+  });
 
 
-  exports.onCreateVideo = functions.firestore
-  .document("/VideoCall/{chatId}")
+exports.onCreateVideo = functions.firestore
+  .document("/videoCall/{chatId}")
   .onCreate(async (snapshot, context) => {
-    console.log("video call Item Created", snapshot.data()); 
+    console.log("video call Item Created", snapshot.data());
 
     // 1) Get user connected to the feed
-    const userId = context.params.chatId;
+    const videoChatId = context.params.chatId;
+    const videoRef = admin.firestore().doc(`videoCall/${videoChatId}`);
+    const videodoc = await videoRef.get();
+
+    const userId = videodoc.data().receiverId;
     console.log(userId);
     const userRef = admin.firestore().doc(`users/${userId}`);
     const doc = await userRef.get();
@@ -299,10 +301,8 @@ exports.onDeletePost = functions.firestore
       let body;
 
       // 3) switch body value based off of notification type
-          body = `${doc.username} sent: ${
-            activityFeedItem.message
-          }`;
-      
+      body = `${videodoc.data().hostName} is video calling you`;
+
 
       // 4) Create message for push notification
       const message = {
@@ -323,7 +323,7 @@ exports.onDeletePost = functions.firestore
           console.log("Error sending message", error);
         });
     }
-  }); 
+  });
 exports.onNewToken = functions.https.onCall((data, context) => {
   // exports.onNewToken = async (req, res) => {
   const appID = '4422fee539f04b57a718c953f7fd7ed0';
