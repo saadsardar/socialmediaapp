@@ -1,10 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:social/Models/user.dart';
+import 'package:social/Pages/RedeemCoinsScreen.dart';
 import 'package:social/Widgets/SuccessMessageDialog.dart';
 import 'package:stripe_payment/stripe_payment.dart';
 // import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+
+import 'PaypalPayment.dart';
 
 class GiftPurchase {
   int coins;
@@ -217,18 +220,22 @@ class _PaymentScreen2State extends State<PaymentScreen2> {
     setState(() {
       isLoading = true;
     });
-    final paymentMethod = await StripePayment.paymentRequestWithCardForm(
-        CardFormPaymentRequest());
+    try {
+      final paymentMethod = await StripePayment.paymentRequestWithCardForm(
+          CardFormPaymentRequest());
+      print('paymentRequestWithCardForm done');
+      double amount = _selectedGift.amount *
+          100.0; // multipliying with 100 to change $ to cents
+      final response = await intent
+          .call(<String, dynamic>{'amount': amount, 'currency': 'usd'});
+      _showMyDialog(response.data["client_secret"], paymentMethod);
+    } catch (e) {
+      print(e);
+    }
 
-    print('paymentRequestWithCardForm done');
-    double amount = _selectedGift.amount *
-        100.0; // multipliying with 100 to change $ to cents
-    final response = await intent
-        .call(<String, dynamic>{'amount': amount, 'currency': 'usd'});
     setState(() {
       isLoading = false;
     });
-    _showMyDialog(response.data["client_secret"], paymentMethod);
   }
 
   displayGiftItem(GiftPurchase giftItem) {
@@ -326,6 +333,10 @@ class _PaymentScreen2State extends State<PaymentScreen2> {
                         style: TextStyle(fontSize: 18, color: Colors.white),
                       ),
                       onPressed: () async {
+                        Navigator.of(context).push(MaterialPageRoute(
+                            builder: (ctx) => RedeemCoinsScreen(
+                                  senderUserId: currentUser.id,
+                                )));
                         // getPayIntent();
                       }),
                   SizedBox(height: 20),
@@ -348,9 +359,25 @@ class _PaymentScreen2State extends State<PaymentScreen2> {
                             'Purchase Gift',
                             style: TextStyle(fontSize: 18, color: Colors.white),
                           ),
-                          onPressed: () async {
-                            getPayIntent();
-                          }),
+                          onPressed: _selectedGift != null
+                              ? () async {
+                                  //   Navigator.of(context).push(
+                                  //     MaterialPageRoute(
+                                  //       builder: (BuildContext context) =>
+                                  //           PaypalPayment(
+                                  //         amount: _selectedGift.amount.toString(),
+                                  //         item: '${_selectedGift.coins} Coins',
+                                  //         onFinish: (number) async {
+                                  //           // payment done
+                                  //           print('order id: ' + number);
+                                  //         },
+                                  //       ),
+                                  //     ),
+                                  //   );
+                                  getPayIntent();
+                                }
+                              : null,
+                        )
                 ],
               ),
       ),

@@ -257,3 +257,56 @@ exports.createPaymentIntent = functions.https.onCall((data, context) => {
     payment_method_types: ['card'],
   });
 });
+
+
+const paypal = require('@paypal/payouts-sdk');
+exports.createPayoutPaypal = functions.https.onCall((data, context) => {
+
+  let clientId = "AQPWq3EqdHjXzJF2fNCp0Sr-tRDZgvalw4b-qRi27ostyfbYbX5-5dXA9Wj60Gsyo8P-CjbITCtTVbKT";
+  let clientSecret = "EEn1MjVnR6-5ulxwmN74KapwWSDXGPFj6yWv5g_xoOzMqPTbvkq4DhyhEJBksfp0-IKnGEM9hLrz_MIL";
+  // let environment = new paypal.core.LiveEnvironment(clientId, clientSecret);
+  let environment = new paypal.core.SandboxEnvironment(clientId, clientSecret);
+  let client = new paypal.core.PayPalHttpClient(environment);
+
+  let requestBody = {
+    "sender_batch_header": {
+      "recipient_type": "EMAIL",
+      "email_message": "SDK payouts test txn",
+      "note": "Enjoy your Payout!!",
+      "sender_batch_id": Date.now.toString,
+      "email_subject": "Coins Redeems"
+    },
+    "items": [{
+      "note": "Your Coins Redemtion Amount",
+      "amount": {
+        "currency": "USD",
+        "value": data.amount
+      },
+      "receiver": data.emailAddress,
+      "sender_item_id": "Test_txn_1"
+    },
+    ]
+  }
+
+  // Construct a request object and set desired parameters
+  // Here, PayoutsPostRequest() creates a POST request to /v1/payments/payouts
+  let request = new paypal.payouts.PayoutsPostRequest();
+  request.requestBody(requestBody);
+
+  // Call API with your client and get a response for your call
+  // let createPayouts = async function () {
+  try {
+
+    client.execute(request).then((response) => {
+      return { 'data': response.result };
+    });
+  } catch (e) {
+    return { 'data': e }
+  }
+  // console.log(`Response: ${JSON.stringify(response)}`);
+  // If call returns body in response, you can get the deserialized version from the result attribute of the response.
+  // console.log(`Payouts Create Response: ${JSON.stringify(response.result)}`);
+  // }
+  // createPayouts();
+  // return {'data': JSON.stringify(response.result)};
+});
