@@ -3,6 +3,8 @@ import 'package:social/Pages/timeline.dart';
 import '../Models/user.dart';
 import 'package:flutter/material.dart';
 
+import 'bar.dart';
+
 class FrontPage extends StatefulWidget {
   final User currentUser;
 
@@ -64,7 +66,7 @@ class _FrontPageState extends State<FrontPage> with TickerProviderStateMixin {
               controller: _tabcontroller,
               children: <Widget>[
                 Timeline(currentUser: widget.currentUser),
-                Timeline(currentUser: widget.currentUser),
+                Bar(currentUser: widget.currentUser),
                 // LiveUsers(widget.currentUser),
               ],
             ),
