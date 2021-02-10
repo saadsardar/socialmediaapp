@@ -329,10 +329,12 @@ class _ChatScreenState extends State<ChatScreen> {
                           );
                           chat.sort(
                               (a, b) => a.timestamp.compareTo(b.timestamp));
-                          return Column(
-                            children: [
-                              for (var item in chat) chatWidget(item),
-                            ],
+                          return SingleChildScrollView(
+                            child: Column(
+                              children: [
+                                for (var item in chat) chatWidget(item),
+                              ],
+                            ),
                           );
                         }
                       },

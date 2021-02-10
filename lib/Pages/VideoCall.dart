@@ -72,7 +72,14 @@ class _VideoCallState extends State<VideoCall> {
     configuration.dimensions = VideoDimensions(1920, 1080);
     await _engine.setVideoEncoderConfiguration(configuration);
     String token;
-    if (widget.role == ClientRole.Broadcaster) {
+    final doc = await FirebaseFirestore.instance
+        .collection('videoCall')
+        .doc(widget.channelName)
+        .get();
+    if (doc != null) {
+      final data = doc.data();
+      token = data['token'];
+    } else {
       HttpsCallable callable = FirebaseFunctions.instance.httpsCallable(
           'onNewToken',
           options: HttpsCallableOptions(timeout: Duration(seconds: 10)));
@@ -92,20 +99,8 @@ class _VideoCallState extends State<VideoCall> {
         print('caught generic exception');
         print(e);
       }
-    } else {
-      try {
-        final videoCallSnapshot = await FirebaseFirestore.instance
-            .collection('videoCall')
-            .doc(widget.channelName)
-            .get();
-        final videoCallData = videoCallSnapshot.data();
-        token = videoCallData['token'];
-      } catch (e) {
-        final info = 'onError: $e';
-        _log(info: info, type: 'notif', user: 'System');
-      }
     }
-    if (widget.role == ClientRole.Broadcaster) {
+    if (doc == null) {
       await FirebaseFirestore.instance
           .collection('videoCall')
           .doc(widget.channelName)
