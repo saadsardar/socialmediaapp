@@ -115,12 +115,7 @@ class _TimelineState extends State<Timeline> {
     } else if (posts.isEmpty) {
       return buildUsersToFollow();
     } else {
-      return Row(
-        children: [
-          ListView(children: posts),
-          
-        ],
-      );
+      return ListView(children: posts);
     }
   }
 

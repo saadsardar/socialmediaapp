@@ -81,6 +81,7 @@ class _PostState extends State<Post> {
   bool isLiked;
   int likeCount;
   Map likes;
+  bool isFollowing;
 
   _PostState({
     this.postId,
@@ -92,6 +93,128 @@ class _PostState extends State<Post> {
     this.likes,
     this.likeCount,
   });
+
+  @override
+  void initState() {
+    super.initState();
+    checkIfFollowing();
+  }
+
+  checkIfFollowing() async {
+    DocumentSnapshot doc = await followersRef
+        .doc(widget.ownerId)
+        .collection('userFollowers')
+        .doc(currentUserId)
+        .get();
+    setState(() {
+      isFollowing = doc.exists;
+    });
+  }
+
+  Container buildButton({String text, Function function}) {
+    return Container(
+      padding: EdgeInsets.only(top: 2.0),
+      child: FlatButton(
+        onPressed: function,
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.2,
+          height: 27.0,
+          child: Text(
+            text,
+            style: TextStyle(
+              color:
+                  // isFollowing ? Colors.black :
+                  Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isFollowing
+                ? Theme.of(context).accentColor
+                : Theme.of(context).primaryColor,
+            // border: Border.all(
+            //   color: isFollowing ? Colors.grey : Colors.blue,
+            // ),
+            borderRadius: BorderRadius.circular(5.0),
+          ),
+        ),
+      ),
+    );
+  }
+
+  handleUnfollowUser() {
+    setState(() {
+      isFollowing = false;
+    });
+    // remove follower
+    followersRef
+        .doc(widget.ownerId)
+        .collection('userFollowers')
+        .doc(currentUserId)
+        .get()
+        .then((doc) {
+      if (doc.exists) {
+        doc.reference.delete();
+      }
+    });
+    // remove following
+    followingRef
+        .doc(currentUserId)
+        .collection('userFollowing')
+        .doc(widget.ownerId)
+        .get()
+        .then((doc) {
+      if (doc.exists) {
+        doc.reference.delete();
+      }
+    });
+    // delete activity feed item for them
+    activityFeedRef
+        .doc(widget.ownerId)
+        .collection('feedItems')
+        .doc(currentUserId)
+        .get()
+        .then((doc) {
+      if (doc.exists) {
+        doc.reference.delete();
+      }
+    });
+  }
+
+  handleFollowUser() {
+    setState(() {
+      isFollowing = true;
+    });
+    // Make auth user follower of THAT user (update THEIR followers collection)
+    followersRef
+        .doc(widget.ownerId)
+        .collection('userFollowers')
+        .doc(currentUserId)
+        .set({});
+    // Put THAT user on YOUR following collection (update your following collection)
+    followingRef
+        .doc(currentUserId)
+        .collection('userFollowing')
+        .doc(widget.ownerId)
+        .set({});
+    // add activity feed item for that user to notify about new follower (us)
+    activityFeedRef
+        .doc(widget.ownerId)
+        .collection('feedItems')
+        .doc(currentUserId)
+        .set({
+      "type": "follow",
+      "ownerId": widget.ownerId,
+      "username": currentUser.username,
+      "userId": currentUserId,
+      "userProfileImg": currentUser.photoUrl,
+      "timestamp": timestamp,
+      "mediaUrl": null,
+      "commentData": null,
+      "postId": null,
+    });
+  }
 
   buildPostHeader() {
     return FutureBuilder(
@@ -129,7 +252,17 @@ class _PostState extends State<Post> {
                   onPressed: () => handleDeletePost(context),
                   icon: Icon(Icons.more_vert),
                 )
-              : Text(''),
+              :
+              //Text(''),
+              isFollowing
+                  ? buildButton(
+                      text: "Unfollow",
+                      function: handleUnfollowUser,
+                    )
+                  : buildButton(
+                      text: "Follow",
+                      function: handleFollowUser,
+                    ),
         );
       },
     );
