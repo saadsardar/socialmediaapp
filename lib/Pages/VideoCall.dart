@@ -17,12 +17,18 @@ class VideoCall extends StatefulWidget {
   /// non-modifiable channel name of the page
   final String channelName;
   final User currentUser;
+  final String receiverUserId;
 
   /// non-modifiable client role of the page
   final ClientRole role;
 
   /// Creates a call page with given channel name.
-  const VideoCall({Key key, this.channelName, this.role, this.currentUser})
+  const VideoCall(
+      {Key key,
+      this.channelName,
+      this.role,
+      this.currentUser,
+      this.receiverUserId})
       : super(key: key);
 
   @override
@@ -109,7 +115,8 @@ class _VideoCallState extends State<VideoCall> {
         'token': token,
         'hostName': widget.currentUser.displayName,
         'picture': widget.currentUser.photoUrl,
-        'status': 'pending'
+        'status': 'pending',
+        'receiverId': widget.receiverUserId,
       });
     }
     await _engine.joinChannel(token, widget.channelName, null, 0);
