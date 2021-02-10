@@ -20,7 +20,7 @@ class Timeline extends StatefulWidget {
 }
 
 class _TimelineState extends State<Timeline> {
-  List<Post> posts;
+  List<Post> posts = [];
   List<String> followingList = [];
   // List<String> postsList = [];
 
@@ -61,7 +61,7 @@ class _TimelineState extends State<Timeline> {
   }
 
   getPosts() async {
-    print("1111");
+    //print("1111");
     final snap = await FirebaseFirestore.instance.collection('users').get();
     // QuerySnapshot snapshot = await postsRef.get();
     final data = snap.docs;
@@ -69,26 +69,36 @@ class _TimelineState extends State<Timeline> {
     data.forEach(
       (e) async {
         final id = e.id;
-        print("id is $id");
+        //print("id is $id");
         QuerySnapshot snapshot2 =
             await postsRef.doc(id).collection('userPosts').get();
         if (snapshot2 != null) {
-          //final data2 = snapshot2.docs;
-          // data.forEach((e) {
-          //   e.data();
-          final posts1 =
-              snapshot2.docs.map((doc) => Post.fromDocument(doc)).toList();
-          posts1.forEach((e) {
-            posts.add(e);
+          final data2 = snapshot2.docs;
+          data2.forEach((e) {
+            //var map= e.data();
+            posts.add(Post.fromDocument(e));
+            // print(posts);
           });
-          // this.posts += posts1;
         }
+        //   e.data();
+        // List<Post> posts1 =
+        //     snapshot2.docs.map((doc) => Post.fromDocument(doc)).toList();
+
+        // posts1.forEach((e) {
+        //   if(e != null)
+        //   {posts.add(e);
+        //   print(e);}
+        // });
+        //print(posts1);
+        // posts.add(posts1);
+        // this.posts += posts1;
+        //}
         //});
         // var map = e.data();
       },
     );
     setState(() {
-      // this.posts = posts;
+       this.posts = posts;
     });
   }
 
@@ -105,7 +115,12 @@ class _TimelineState extends State<Timeline> {
     } else if (posts.isEmpty) {
       return buildUsersToFollow();
     } else {
-      return ListView(children: posts);
+      return Row(
+        children: [
+          ListView(children: posts),
+          
+        ],
+      );
     }
   }
 
