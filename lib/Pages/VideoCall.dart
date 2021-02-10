@@ -76,8 +76,8 @@ class _VideoCallState extends State<VideoCall> {
         .collection('videoCall')
         .doc(widget.channelName)
         .get();
-    if (doc != null) {
-      final data = doc.data();
+    final data = doc.data();
+    if (data != null) {
       token = data['token'];
     } else {
       HttpsCallable callable = FirebaseFunctions.instance.httpsCallable(
