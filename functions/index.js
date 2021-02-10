@@ -224,6 +224,55 @@ exports.onDeletePost = functions.firestore
         });
     }
   }); 
+  exports.onCreateChat = functions.firestore
+  .document("/chats/{to}/{from}/{messages}")
+  .onCreate(async (snapshot, context) => {
+    console.log("chat Item Created", snapshot.data()); 
+
+    // 1) Get user connected to the feed
+    const userId = context.params.to;
+
+    const userRef = admin.firestore().doc(`users/${userId}`);
+    const doc = await userRef.get();
+
+    // 2) Once we have user, check if they have a notification token; send notification, if they have a token
+    const androidNotificationToken = doc.data().androidNotificationToken;
+    const createdChatItem = snapshot.data();
+    if (androidNotificationToken) {
+      sendNotification(androidNotificationToken, createdChatItem);
+    } else {
+      console.log("No token for user, cannot send notification");
+    }
+
+    function sendNotification(androidNotificationToken, activityFeedItem) {
+      let body;
+
+      // 3) switch body value based off of notification type
+          body = `${activityFeedItem.from} sent: ${
+            activityFeedItem.message
+          }`;
+      
+
+      // 4) Create message for push notification
+      const message = {
+        notification: { body },
+        token: androidNotificationToken,
+        data: { recipient: userId }
+      };
+
+      // 5) Send message with admin.messaging()
+      admin
+        .messaging()
+        .send(message)
+        .then(response => {
+          // Response is a message ID string
+          console.log("Successfully sent message", response);
+        })
+        .catch(error => {
+          console.log("Error sending message", error);
+        });
+    }
+  }); 
 
 exports.onNewToken = functions.https.onCall((data, context) => {
   // exports.onNewToken = async (req, res) => {
