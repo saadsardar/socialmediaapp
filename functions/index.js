@@ -231,7 +231,7 @@ exports.onDeletePost = functions.firestore
 
     // 1) Get user connected to the feed
     const userId = context.params.to;
-
+    console.log(userId);
     const userRef = admin.firestore().doc(`users/${userId}`);
     const doc = await userRef.get();
 
@@ -248,7 +248,7 @@ exports.onDeletePost = functions.firestore
       let body;
 
       // 3) switch body value based off of notification type
-          body = `${activityFeedItem.from} sent: ${
+          body = `${doc.username} sent: ${
             activityFeedItem.message
           }`;
       
