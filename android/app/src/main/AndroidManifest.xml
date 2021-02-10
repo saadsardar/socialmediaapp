@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.socialmediaapp">
    <application
-        android:label="socialmediaapp"
+        android:label="Liveo"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
