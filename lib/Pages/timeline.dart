@@ -22,14 +22,15 @@ class Timeline extends StatefulWidget {
 class _TimelineState extends State<Timeline> {
   List<Post> posts = [];
   List<String> followingList = [];
+  bool isInit = false;
   // List<String> postsList = [];
 
   @override
   void initState() {
     super.initState();
     //getTimeline();
-    getPosts();
-    getFollowing();
+    // getPosts();
+    // getFollowing();
   }
 
   @override
@@ -55,50 +56,55 @@ class _TimelineState extends State<Timeline> {
         .doc(currentUser.id)
         .collection('userFollowing')
         .get();
-    setState(() {
-      followingList = snapshot.docs.map((doc) => doc.id).toList();
-    });
+    // setState(() {
+    followingList = snapshot.docs.map((doc) => doc.id).toList();
+    // });
   }
 
   getPosts() async {
-    //print("1111");
+    // posts.clear();
+    List<Post> posts1 = [];
+    print("In getpost");
     final snap = await FirebaseFirestore.instance.collection('users').get();
     // QuerySnapshot snapshot = await postsRef.get();
     final data = snap.docs;
     // print('Data : $data');
-    data.forEach(
-      (e) async {
-        final id = e.id;
-        //print("id is $id");
-        QuerySnapshot snapshot2 =
-            await postsRef.doc(id).collection('userPosts').get();
-        if (snapshot2 != null) {
-          final data2 = snapshot2.docs;
-          data2.forEach((e) {
-            //var map= e.data();
-            posts.add(Post.fromDocument(e));
-            // print(posts);
-          });
-        }
-        //   e.data();
-        // List<Post> posts1 =
-        //     snapshot2.docs.map((doc) => Post.fromDocument(doc)).toList();
 
-        // posts1.forEach((e) {
-        //   if(e != null)
-        //   {posts.add(e);
-        //   print(e);}
-        // });
-        //print(posts1);
-        // posts.add(posts1);
-        // this.posts += posts1;
-        //}
-        //});
-        // var map = e.data();
-      },
-    );
+    for (var e in data) {
+      final id = e.id;
+      // print("id is $id");
+      QuerySnapshot snapshot2 =
+          await postsRef.doc(id).collection('userPosts').get();
+      if (snapshot2 != null) {
+        final data2 = snapshot2.docs;
+        data2.forEach((e) {
+          //var map= e.data();
+          posts1.add(Post.fromDocument(e));
+          // print(posts);
+        });
+      }
+    }
+    // isInit = true;
+    //   e.data();
+    // List<Post> posts1 =
+    //     snapshot2.docs.map((doc) => Post.fromDocument(doc)).toList();
+
+    // posts1.forEach((e) {
+    //   if(e != null)
+    //   {posts.add(e);
+    //   print(e);}
+    // });
+    //print(posts1);
+    // posts.add(posts1);
+    // this.posts += posts1;
+    //}
+    //});
+    // var map = e.data();
+    //   },
+    // );
+    isInit = true;
     setState(() {
-       this.posts = posts;
+      this.posts = posts1;
     });
   }
 
@@ -109,10 +115,20 @@ class _TimelineState extends State<Timeline> {
   //   postsList = snapshot.docs.map((doc) => doc.id).toList();
   // });
 
+  //orignal buildTimeLine
+  // buildTimeline() {
+  //   if (posts == null) {
+  //     return circularProgress();
+  //   } else if (posts.isEmpty) {
+  //     return buildUsersToFollow();
+  //   } else {
+  //     return ListView(children: posts);
+  //   }
+  // }
   buildTimeline() {
-    if (posts == null) {
+    if (posts.isEmpty && !isInit) {
       return circularProgress();
-    } else if (posts.isEmpty) {
+    } else if (posts.isEmpty && isInit) {
       return buildUsersToFollow();
     } else {
       return ListView(children: posts);
@@ -179,9 +195,16 @@ class _TimelineState extends State<Timeline> {
 
   @override
   Widget build(context) {
+    if (!isInit) {
+      print('Not isinit');
+      getPosts();
+      getFollowing();
+    }
     return Scaffold(
-        // appBar: header(context, isAppTitle: true),
-        body: RefreshIndicator(
-            onRefresh: () => getPosts(), child: buildTimeline()));
+      // appBar: header(context, isAppTitle: true),
+      body: buildTimeline(),
+    );
+    // RefreshIndicator(
+    //     onRefresh: () => getPosts(), child: buildTimeline()));
   }
 }
