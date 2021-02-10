@@ -288,6 +288,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     channelName: chatId,
                     role: ClientRole.Broadcaster,
                     currentUser: userSelf,
+                    receiverUserId: userFriend.id,
                   ),
                 ));
               }),
