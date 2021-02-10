@@ -100,7 +100,7 @@ class _VideoCallState extends State<VideoCall> {
         print(e);
       }
     }
-    if (doc == null) {
+    if (data == null) {
       await FirebaseFirestore.instance
           .collection('videoCall')
           .doc(widget.channelName)
