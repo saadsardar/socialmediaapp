@@ -17,6 +17,7 @@ class Post extends StatefulWidget {
   final String location;
   final String description;
   final String mediaUrl;
+  final bool isVideo;
   final dynamic likes;
 
   Post({
@@ -26,6 +27,7 @@ class Post extends StatefulWidget {
     this.location,
     this.description,
     this.mediaUrl,
+    this.isVideo,
     this.likes,
   });
 
@@ -37,6 +39,7 @@ class Post extends StatefulWidget {
       location: doc['location'],
       description: doc['description'],
       mediaUrl: doc['mediaUrl'],
+      isVideo: doc['isVideo'],
       likes: doc['likes'],
     );
   }
@@ -77,6 +80,7 @@ class _PostState extends State<Post> {
   final String location;
   final String description;
   final String mediaUrl;
+  final bool isVideo;
   bool showHeart = false;
   bool isLiked;
   int likeCount;
@@ -90,6 +94,7 @@ class _PostState extends State<Post> {
     this.location,
     this.description,
     this.mediaUrl,
+    this.isVideo,
     this.likes,
     this.likeCount,
   });
@@ -399,7 +404,7 @@ class _PostState extends State<Post> {
       child: Stack(
         alignment: Alignment.centerLeft,
         children: <Widget>[
-          cachedNetworkImage(mediaUrl),
+          isVideo ? Text("") : cachedNetworkImage(mediaUrl),
           showHeart
               ?
               // Animator(

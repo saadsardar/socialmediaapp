@@ -28,6 +28,7 @@ class _UploadState extends State<Upload>
   File file;
   bool isUploading = false;
   String postId = Uuid().v4();
+  bool isVideo = false;
 
   ImagePicker _picker = ImagePicker();
 
@@ -40,6 +41,7 @@ class _UploadState extends State<Upload>
     // print(pickedimagefile);
     setState(() {
       file = File(pickedimagefile.path);
+      isVideo = false;
     });
   }
 
@@ -50,6 +52,18 @@ class _UploadState extends State<Upload>
     );
     setState(() {
       file = File(pickedimagefile.path);
+      isVideo = false;
+    });
+  }
+
+  Future handleChooseVideoFromGallery() async {
+    Navigator.pop(context);
+    var pickedimagefile = await _picker.getVideo(
+      source: ImageSource.gallery,
+    );
+    setState(() {
+      file = File(pickedimagefile.path);
+      isVideo = true;
     });
   }
 
@@ -65,6 +79,9 @@ class _UploadState extends State<Upload>
             SimpleDialogOption(
                 child: Text("Image from Gallery"),
                 onPressed: handleChooseFromGallery),
+            SimpleDialogOption(
+                child: Text("Video from Gallery"),
+                onPressed: handleChooseVideoFromGallery),
             SimpleDialogOption(
               child: Text("Cancel"),
               onPressed: () => Navigator.pop(context),
@@ -109,25 +126,30 @@ class _UploadState extends State<Upload>
     });
   }
 
-  compressImage() async {
-    final tempDir = await getTemporaryDirectory();
-    final path = tempDir.path;
-    Im.Image imageFile = Im.decodeImage(file.readAsBytesSync());
-    final compressedImageFile = File('$path/img_$postId.jpg')
-      ..writeAsBytesSync(Im.encodeJpg(imageFile, quality: 85));
-    setState(() {
-      file = compressedImageFile;
-    });
+  // compressImage() async {
+  //   final tempDir = await getTemporaryDirectory();
+  //   final path = tempDir.path;
+  //   Im.Image imageFile = Im.decodeImage(file.readAsBytesSync());
+  //   final compressedImageFile = File('$path/img_$postId.jpg')
+  //     ..writeAsBytesSync(Im.encodeJpg(imageFile, quality: 85));
+  //   setState(() {
+  //     file = compressedImageFile;
+  //   });
+  // }
+  Future<String> uploadVideo(imageFile) async{
+       StorageUploadTask uploadTask =
+        storageRef.child("post_$postId.mp4").putFile(imageFile, StorageMetadata(contentType: 'video/mp4'));
+    StorageTaskSnapshot storageSnap = await uploadTask.onComplete;
+    String downloadUrl = await storageSnap.ref.getDownloadURL();
+    return downloadUrl;
   }
 
   Future<String> uploadImage(imageFile) async {
-    // StorageUploadTask uploadTask =
-    //     storageRef.child("post_$postId.jpg").putFile(imageFile);
-    // StorageTaskSnapshot storageSnap = await uploadTask.onComplete;
-    // String downloadUrl = await storageSnap.ref.getDownloadURL();
-    // return downloadUrl;
-
-    final ref = FirebaseStorage.instance.ref().child('post_$postId.jpg');
+   
+    print(isVideo);
+    final ref =
+        // ? FirebaseStorage.instance.ref().child('post_$postId.mp4')
+        FirebaseStorage.instance.ref().child('post_$postId.jpg');
     // child('user_dp');
     await ref.putFile(imageFile).onComplete;
     String downloadUrl = await ref.getDownloadURL();
@@ -148,6 +170,7 @@ class _UploadState extends State<Upload>
       "description": description,
       "location": location,
       "timestamp": timestamp,
+      "isVideo" : isVideo,
       "likes": {},
     });
   }
@@ -157,7 +180,8 @@ class _UploadState extends State<Upload>
       isUploading = true;
     });
     //await compressImage();
-    String mediaUrl = await uploadImage(file);
+    String mediaUrl = isVideo ? await uploadVideo(file)
+    : await uploadImage(file);
     print(mediaUrl);
     createPostInFirestore(
       mediaUrl: mediaUrl,
@@ -214,7 +238,7 @@ class _UploadState extends State<Upload>
                           selectImage(context);
                         },
                         icon: Icon(Icons.add_a_photo_rounded),
-                        label: Text('Add Photo'))
+                        label: Text('Add Media'))
                     : Container(
                         decoration: BoxDecoration(
                           image: DecorationImage(
