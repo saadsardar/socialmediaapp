@@ -8,6 +8,7 @@ import 'package:social/Models/user.dart';
 import 'package:social/Pages/comments.dart';
 import 'package:social/Pages/home.dart';
 import 'package:social/Pages/profile.dart';
+import 'package:video_player/video_player.dart';
 import 'custom_image.dart';
 
 class Post extends StatefulWidget {
@@ -67,6 +68,7 @@ class Post extends StatefulWidget {
         location: this.location,
         description: this.description,
         mediaUrl: this.mediaUrl,
+        isVideo: this.isVideo,
         likes: this.likes,
         likeCount: getLikeCount(this.likes),
       );
@@ -98,9 +100,15 @@ class _PostState extends State<Post> {
     this.likes,
     this.likeCount,
   });
-
+  // VideoPlayerController _controller;
+  // Future<void> _initializeVideoPlayerFuture;
   @override
   void initState() {
+    // _controller = VideoPlayerController.network(mediaUrl);
+    // //_controller = VideoPlayerController.asset("videos/sample_video.mp4");
+    // _initializeVideoPlayerFuture = _controller.initialize();
+    // _controller.setLooping(true);
+    // _controller.setVolume(1.0);
     super.initState();
     checkIfFollowing();
   }
@@ -147,6 +155,28 @@ class _PostState extends State<Post> {
       ),
     );
   }
+
+  // playVideo() {
+  //   FutureBuilder(
+      
+  //     future: _initializeVideoPlayerFuture,
+  //     builder: (context, snapshot) {
+  //       print("In future");
+  //       if (snapshot.connectionState == ConnectionState.done) {
+  //         return Center(
+  //           child: AspectRatio(
+  //             aspectRatio: _controller.value.aspectRatio,
+  //             child: VideoPlayer(_controller),
+  //           ),
+  //         );
+  //       } else {
+  //         return Center(
+  //           child: CircularProgressIndicator(),
+  //         );
+  //       }
+  //     },
+  //   );
+  // }
 
   handleUnfollowUser() {
     setState(() {
@@ -404,7 +434,8 @@ class _PostState extends State<Post> {
       child: Stack(
         alignment: Alignment.centerLeft,
         children: <Widget>[
-          isVideo ? Text("") : cachedNetworkImage(mediaUrl),
+          //isVideo ? playVideo() : 
+          cachedNetworkImage(mediaUrl),
           showHeart
               ?
               // Animator(
