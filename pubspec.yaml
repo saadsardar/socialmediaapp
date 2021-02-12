@@ -44,6 +44,8 @@ dependencies:
   intl: ^0.16.1
   webview_flutter: ^1.0.7
   http_auth: ^0.3.1
+  video_player: ^0.10.11+2
+
 
 
   # The following adds the Cupertino Icons font to your application.
