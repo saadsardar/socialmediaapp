@@ -100,15 +100,31 @@ class _PostState extends State<Post> {
     this.likes,
     this.likeCount,
   });
-  // VideoPlayerController _controller;
-  // Future<void> _initializeVideoPlayerFuture;
+
+  VideoPlayerController _controller;
+  Future<void> _initializeVideoPlayerFuture;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
   @override
   void initState() {
-    // _controller = VideoPlayerController.network(mediaUrl);
-    // //_controller = VideoPlayerController.asset("videos/sample_video.mp4");
-    // _initializeVideoPlayerFuture = _controller.initialize();
-    // _controller.setLooping(true);
-    // _controller.setVolume(1.0);
+    if (isVideo) {
+      _controller = VideoPlayerController.network(mediaUrl)
+        ..addListener(() => setState(() {}))
+        ..setLooping(true)
+        ..initialize().then((_) => _controller.play());
+      // setState(() {});
+
+      // _controller = VideoPlayerController.network(mediaUrl);
+      // //_controller = VideoPlayerController.asset("videos/sample_video.mp4");
+      // _initializeVideoPlayerFuture = _controller.initialize();
+      // _controller.setLooping(true);
+      // _controller.setVolume(1.0);
+    }
     super.initState();
     checkIfFollowing();
   }
@@ -156,27 +172,77 @@ class _PostState extends State<Post> {
     );
   }
 
-  // playVideo() {
-  //   FutureBuilder(
-      
-  //     future: _initializeVideoPlayerFuture,
-  //     builder: (context, snapshot) {
-  //       print("In future");
-  //       if (snapshot.connectionState == ConnectionState.done) {
-  //         return Center(
-  //           child: AspectRatio(
-  //             aspectRatio: _controller.value.aspectRatio,
-  //             child: VideoPlayer(_controller),
-  //           ),
-  //         );
-  //       } else {
-  //         return Center(
-  //           child: CircularProgressIndicator(),
-  //         );
-  //       }
-  //     },
-  //   );
-  // }
+  play() {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _controller.value.isPlaying
+          ? _controller.pause()
+          : _controller.play(),
+      child: Stack(
+        children: <Widget>[
+          buildPlay(),
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: buildIndicator(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildIndicator() => VideoProgressIndicator(
+        _controller,
+        allowScrubbing: true,
+      );
+
+  Widget buildPlay() => _controller.value.isPlaying
+      ? Container()
+      : Container(
+          alignment: Alignment.center,
+          color: Colors.black26,
+          child: Icon(Icons.play_arrow, color: Colors.white, size: 80),
+        );
+
+  playVideo() {
+    if (_controller != null && _controller.value.initialized) {
+      return Center(
+        child: Stack(
+          children: [
+            AspectRatio(
+              aspectRatio: _controller.value.aspectRatio,
+              child: VideoPlayer(_controller),
+            ),
+            play(),
+          ],
+        ),
+      );
+    } else {
+      return Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    // FutureBuilder(
+    //   future: _initializeVideoPlayerFuture,
+    //   builder: (context, snapshot) {
+    //     print("In future");
+    //     if (snapshot.connectionState == ConnectionState.done) {
+    //       return Center(
+    //         child: AspectRatio(
+    //           aspectRatio: _controller.value.aspectRatio,
+    //           child: VideoPlayer(_controller),
+    //         ),
+    //       );
+    //     } else {
+    //       return Center(
+    //         child: CircularProgressIndicator(),
+    //       );
+    //     }
+    //   },
+    // );
+  }
 
   handleUnfollowUser() {
     setState(() {
@@ -434,7 +500,7 @@ class _PostState extends State<Post> {
       child: Stack(
         alignment: Alignment.centerLeft,
         children: <Widget>[
-          //isVideo ? playVideo() : 
+          //isVideo ? playVideo() :
           cachedNetworkImage(mediaUrl),
           showHeart
               ?

@@ -207,7 +207,7 @@ exports.onCreateActivityFeedItem = functions.firestore
       const message = {
         notification: { body },
         token: androidNotificationToken,
-        data: { recipient: userId }
+        data: { recipient: userId, type: 'activityFeedItem' }
       };
 
       // 5) Send message with admin.messaging()
@@ -224,12 +224,12 @@ exports.onCreateActivityFeedItem = functions.firestore
     }
   });
 exports.onCreateChat = functions.firestore
-  .document("/chats/{to}/{from}/{messages}")
+  .document("/chats/{receiver}/{sender}/{messages}")
   .onCreate(async (snapshot, context) => {
     console.log("chat Item Created", snapshot.data());
 
     // 1) Get user connected to the feed
-    const userId = context.params.to;
+    const userId = context.params.receiver;
     console.log(userId);
     const userRef = admin.firestore().doc(`users/${userId}`);
     const doc = await userRef.get();
@@ -255,7 +255,7 @@ exports.onCreateChat = functions.firestore
       const message = {
         notification: { body },
         token: androidNotificationToken,
-        data: { recipient: userId }
+        data: { recipient: userId, type: 'chat' , senderUserId : context.params.sender}
       };
 
       // 5) Send message with admin.messaging()
@@ -308,7 +308,7 @@ exports.onCreateVideo = functions.firestore
       const message = {
         notification: { body },
         token: androidNotificationToken,
-        data: { recipient: userId }
+        data: { recipient: userId, type: 'video', channelName: videoChatId }
       };
 
       // 5) Send message with admin.messaging()

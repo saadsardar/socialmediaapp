@@ -185,7 +185,7 @@ class _UploadState extends State<Upload>
     print(mediaUrl);
     createPostInFirestore(
       mediaUrl: mediaUrl,
-      location: locationController.text,
+      location: '',
       description: captionController.text,
     );
     captionController.clear();
@@ -270,43 +270,43 @@ class _UploadState extends State<Upload>
             ),
           ),
           Divider(),
-          ListTile(
-            leading: Icon(
-              Icons.pin_drop,
-              color: Colors.orange,
-              size: 35.0,
-            ),
-            title: Container(
-              width: 250.0,
-              child: TextField(
-                controller: locationController,
-                decoration: InputDecoration(
-                  hintText: "Where was this photo taken?",
-                  border: InputBorder.none,
-                ),
-              ),
-            ),
-          ),
-          Container(
-            width: 200.0,
-            height: 100.0,
-            alignment: Alignment.center,
-            child: RaisedButton.icon(
-              label: Text(
-                "Use Current Location",
-                style: TextStyle(color: Colors.white),
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30.0),
-              ),
-              color: Theme.of(context).primaryColor,
-              onPressed: getUserLocation,
-              icon: Icon(
-                Icons.my_location,
-                color: Colors.white,
-              ),
-            ),
-          ),
+          // ListTile(
+          //   leading: Icon(
+          //     Icons.pin_drop,
+          //     color: Colors.orange,
+          //     size: 35.0,
+          //   ),
+          //   title: Container(
+          //     width: 250.0,
+          //     child: TextField(
+          //       controller: locationController,
+          //       decoration: InputDecoration(
+          //         hintText: "Where was this photo taken?",
+          //         border: InputBorder.none,
+          //       ),
+          //     ),
+          //   ),
+          // ),
+          // Container(
+          //   width: 200.0,
+          //   height: 100.0,
+          //   alignment: Alignment.center,
+          //   child: RaisedButton.icon(
+          //     label: Text(
+          //       "Use Current Location",
+          //       style: TextStyle(color: Colors.white),
+          //     ),
+          //     shape: RoundedRectangleBorder(
+          //       borderRadius: BorderRadius.circular(30.0),
+          //     ),
+          //     color: Theme.of(context).primaryColor,
+          //     onPressed: getUserLocation,
+          //     icon: Icon(
+          //       Icons.my_location,
+          //       color: Colors.white,
+          //     ),
+          //   ),
+          // ),
         ],
       ),
     );

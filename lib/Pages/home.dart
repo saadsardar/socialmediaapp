@@ -99,6 +99,40 @@ class _HomeState extends State<Home> {
     }
   }
 
+  snackbarFunction(
+      String body, String type, Map<String, dynamic> message, String userId) {
+    print("Notification shown!");
+    SnackBar snackbar = SnackBar(
+      content: Text(
+        body,
+        overflow: TextOverflow.ellipsis,
+      ),
+      action: type == 'activityFeedItem'
+          ? null
+          : SnackBarAction(
+              label: type == 'chat' ? 'view' : 'receive',
+              onPressed: () async {
+                if (type == 'chat') {
+                  final senderUserId = message['data']['senderUserId'];
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (ctx) => ChatScreen(userId, senderUserId)));
+                } else {
+                  final channelName = message['data']['channelName'];
+                  DocumentSnapshot doc = await usersRef.doc(userId).get();
+                  currentUser = Userclass.User.fromDocument(doc);
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (ctx) => VideoCall(
+                            channelName: channelName,
+                            currentUser: currentUser,
+                            receiverUserId: userId,
+                            role: ClientRole.Broadcaster,
+                          )));
+                }
+              }),
+    );
+    _scaffoldKey.currentState.showSnackBar(snackbar);
+  }
+
   configurePushNotifications() {
     final GoogleSignInAccount user = googleSignIn.currentUser;
     if (Platform.isIOS) getiOSPermission();
@@ -108,39 +142,6 @@ class _HomeState extends State<Home> {
       usersRef.doc(user.id).update({"androidNotificationToken": token});
     });
 
-    snackbarFunction(String body, String type, Map<String, dynamic> message) {
-      print("Notification shown!");
-      SnackBar snackbar = SnackBar(
-        content: Text(
-          body,
-          overflow: TextOverflow.ellipsis,
-        ),
-        action: type == 'activityFeedItem'
-            ? null
-            : SnackBarAction(
-                label: type == 'chat' ? 'view' : 'receive',
-                onPressed: () async {
-                  if (type == 'chat') {
-                    final senderUserId = message['data']['senderUserId'];
-                    Navigator.of(context).push(MaterialPageRoute(
-                        builder: (ctx) => ChatScreen(user.id, senderUserId)));
-                  } else {
-                    final channelName = message['data']['channelName'];
-                    DocumentSnapshot doc = await usersRef.doc(user.id).get();
-                    currentUser = Userclass.User.fromDocument(doc);
-                    Navigator.of(context).push(MaterialPageRoute(
-                        builder: (ctx) => VideoCall(
-                              channelName: channelName,
-                              currentUser: currentUser,
-                              receiverUserId: user.id,
-                              role: ClientRole.Broadcaster,
-                            )));
-                  }
-                }),
-      );
-      _scaffoldKey.currentState.showSnackBar(snackbar);
-    }
-
     _firebaseMessaging.configure(
       onLaunch: (Map<String, dynamic> message) async {
         print("on message: $message\n");
@@ -148,9 +149,11 @@ class _HomeState extends State<Home> {
         final String body = message['notification']['body'];
         final String type = message['data']['type'];
         if (recipientId == user.id) {
-          snackbarFunction(body, type, message);
+          print('recepientId: $recipientId  User.id: ${user.id}');
+          snackbarFunction(body, type, message, user.id);
+        } else {
+          print("Notification NOT shown");
         }
-        print("Notification NOT shown");
       },
       onResume: (Map<String, dynamic> message) async {
         print("on message: $message\n");
@@ -159,9 +162,11 @@ class _HomeState extends State<Home> {
         final String type = message['data']['type'];
 
         if (recipientId == user.id) {
-          snackbarFunction(body, type, message);
+          print('recepientId: $recipientId  User.id: ${user.id}');
+          snackbarFunction(body, type, message, user.id);
+        } else {
+          print("Notification NOT shown");
         }
-        print("Notification NOT shown");
       },
       onMessage: (Map<String, dynamic> message) async {
         print("on message: $message\n");
@@ -169,9 +174,11 @@ class _HomeState extends State<Home> {
         final String body = message['notification']['body'];
         final String type = message['data']['type'];
         if (recipientId == user.id) {
-          snackbarFunction(body, type, message);
+          print('recepientId: $recipientId  User.id: ${user.id}');
+          snackbarFunction(body, type, message, user.id);
+        } else {
+          print("Notification NOT shown");
         }
-        print("Notification NOT shown");
       },
     );
   }
