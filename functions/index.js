@@ -247,7 +247,7 @@ exports.onCreateChat = functions.firestore
       let body;
 
       // 3) switch body value based off of notification type
-      body = `${doc.username} sent: ${activityFeedItem.message
+      body = `${doc.data().username} sent: ${activityFeedItem.message
         }`;
 
 
@@ -326,9 +326,9 @@ exports.onCreateVideo = functions.firestore
   });
 exports.onNewToken = functions.https.onCall((data, context) => {
   // exports.onNewToken = async (req, res) => {
-  const appID = '4422fee539f04b57a718c953f7fd7ed0';
+  const appID = '45902e88ce5e4ba0909a8b8d17eee546';
 
-  const appCertificate = '70d0302eef154fed8e56538b99148959';
+  const appCertificate = 'ec95e92051984fb8b0020ba4347b25e1';
   const channelName = data.channelName;
   console.log('Channel Name:');
   console.log(channelName);

@@ -1,6 +1,4 @@
 import 'dart:io';
-
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import "package:flutter/material.dart";
@@ -52,8 +50,9 @@ class _EditProfileState extends State<EditProfile> {
           backgroundColor: Theme.of(context).accentColor,
           backgroundImage: _pickedimage != null
               ? FileImage(_pickedimage)
-              : CachedNetworkImage(imageUrl: user.photoUrl),
-          // ? AssetImage('assets/userIcon.png')
+              // : AssetImage('assets/images/logo.png'),
+              : NetworkImage(user.photoUrl),
+          // : CachedNetworkImage(imageUrl: user.photoUrl),
           radius: 60,
         ),
         Positioned(
@@ -241,8 +240,8 @@ class _EditProfileState extends State<EditProfile> {
                         padding: EdgeInsets.all(16.0),
                         child: Column(
                           children: <Widget>[
-                            buildBioField(),
                             buildDisplayNameField(),
+                            buildBioField(),
                             buildBioField(),
                           ],
                         ),

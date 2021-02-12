@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:agora_rtc_engine/rtc_engine.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -7,7 +8,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:social/Models/user.dart' as Userclass;
+import 'package:social/Pages/ChatScreen.dart';
 import 'package:social/Pages/LiveUsers.dart';
+import 'package:social/Pages/VideoCall.dart';
 import 'package:social/Pages/activity_feed.dart';
 import 'package:social/Pages/profile.dart';
 import 'package:social/Pages/upload.dart';
@@ -87,8 +90,7 @@ class _HomeState extends State<Home> {
         isInit = true;
         isAuth = true;
       });
-            configurePushNotifications();
-
+      configurePushNotifications();
     } else {
       setState(() {
         isInit = true;
@@ -96,45 +98,68 @@ class _HomeState extends State<Home> {
       });
     }
   }
-    configurePushNotifications() {
+
+  configurePushNotifications() {
     final GoogleSignInAccount user = googleSignIn.currentUser;
     if (Platform.isIOS) getiOSPermission();
 
     _firebaseMessaging.getToken().then((token) {
       print("Firebase Messaging Token: $token\n");
-      usersRef
-          .doc(user.id)
-          .update({"androidNotificationToken": token});
+      usersRef.doc(user.id).update({"androidNotificationToken": token});
     });
+
+    snackbarFunction(String body, String type, Map<String, dynamic> message) {
+      print("Notification shown!");
+      SnackBar snackbar = SnackBar(
+        content: Text(
+          body,
+          overflow: TextOverflow.ellipsis,
+        ),
+        action: type == 'activityFeedItem'
+            ? null
+            : SnackBarAction(
+                label: type == 'chat' ? 'view' : 'receive',
+                onPressed: () async {
+                  if (type == 'chat') {
+                    final senderUserId = message['data']['senderUserId'];
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (ctx) => ChatScreen(user.id, senderUserId)));
+                  } else {
+                    final channelName = message['data']['channelName'];
+                    DocumentSnapshot doc = await usersRef.doc(user.id).get();
+                    currentUser = Userclass.User.fromDocument(doc);
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (ctx) => VideoCall(
+                              channelName: channelName,
+                              currentUser: currentUser,
+                              receiverUserId: user.id,
+                              role: ClientRole.Broadcaster,
+                            )));
+                  }
+                }),
+      );
+      _scaffoldKey.currentState.showSnackBar(snackbar);
+    }
 
     _firebaseMessaging.configure(
       onLaunch: (Map<String, dynamic> message) async {
-                print("on message: $message\n");
+        print("on message: $message\n");
         final String recipientId = message['data']['recipient'];
         final String body = message['notification']['body'];
+        final String type = message['data']['type'];
         if (recipientId == user.id) {
-          print("Notification shown!");
-          SnackBar snackbar = SnackBar(
-              content: Text(
-            body,
-            overflow: TextOverflow.ellipsis,
-          ));
-          _scaffoldKey.currentState.showSnackBar(snackbar);
+          snackbarFunction(body, type, message);
         }
         print("Notification NOT shown");
       },
       onResume: (Map<String, dynamic> message) async {
-                print("on message: $message\n");
+        print("on message: $message\n");
         final String recipientId = message['data']['recipient'];
         final String body = message['notification']['body'];
+        final String type = message['data']['type'];
+
         if (recipientId == user.id) {
-          print("Notification shown!");
-          SnackBar snackbar = SnackBar(
-              content: Text(
-            body,
-            overflow: TextOverflow.ellipsis,
-          ));
-          _scaffoldKey.currentState.showSnackBar(snackbar);
+          snackbarFunction(body, type, message);
         }
         print("Notification NOT shown");
       },
@@ -142,27 +167,22 @@ class _HomeState extends State<Home> {
         print("on message: $message\n");
         final String recipientId = message['data']['recipient'];
         final String body = message['notification']['body'];
+        final String type = message['data']['type'];
         if (recipientId == user.id) {
-          print("Notification shown!");
-          SnackBar snackbar = SnackBar(
-              content: Text(
-            body,
-            overflow: TextOverflow.ellipsis,
-          ));
-          _scaffoldKey.currentState.showSnackBar(snackbar);
+          snackbarFunction(body, type, message);
         }
         print("Notification NOT shown");
       },
     );
   }
-    getiOSPermission() {
+
+  getiOSPermission() {
     _firebaseMessaging.requestNotificationPermissions(
         IosNotificationSettings(alert: true, badge: true, sound: true));
     _firebaseMessaging.onIosSettingsRegistered.listen((settings) {
       print("Settings registered: $settings");
     });
   }
-    
 
   createUserInFirestore() async {
     print("in create");
@@ -187,7 +207,6 @@ class _HomeState extends State<Home> {
       });
       doc = await usersRef.doc(user.id).get();
     }
-
     currentUser = Userclass.User.fromDocument(doc);
     // print(currentUser);
     // print(currentUser.username);

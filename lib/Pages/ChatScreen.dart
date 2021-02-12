@@ -19,6 +19,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   User userSelf, userFriend;
   String chatId;
+  ScrollController _scrollController = new ScrollController();
   bool isLoading = true;
   TextEditingController _messageControl;
   @override
@@ -36,7 +37,7 @@ class _ChatScreenState extends State<ChatScreen> {
       userSelf = User.fromDocument(doc);
       userFriend = User.fromDocument(doc2);
       chatId = getChatId();
-      print('Data gathered');
+      // print('Data gathered');
       isLoading = false;
     });
     // isInit = true;
@@ -109,6 +110,16 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget chatWidget(ChatItem chat) {
+    // var scrollPosition = _scrollController.position;
+
+    // if (scrollPosition.viewportDimension < scrollPosition.maxScrollExtent) {
+    //   _scrollController.animateTo(
+    //     scrollPosition.maxScrollExtent,
+    //     duration: new Duration(milliseconds: 200),
+    //     curve: Curves.easeOut,
+    //   );
+    // }
+    // _scrollController.position.maxScrollExtent;
     return Container(
       padding: const EdgeInsets.all(10),
       // margin: const EdgeInsets.all(10),
@@ -329,13 +340,13 @@ class _ChatScreenState extends State<ChatScreen> {
                             },
                           );
                           chat.sort(
-                              (a, b) => a.timestamp.compareTo(b.timestamp));
-                          return SingleChildScrollView(
-                            child: Column(
-                              children: [
-                                for (var item in chat) chatWidget(item),
-                              ],
-                            ),
+                              (a, b) => b.timestamp.compareTo(a.timestamp));
+                          return ListView(
+                            reverse: true,
+                            controller: _scrollController,
+                            children: [
+                              for (var item in chat) chatWidget(item),
+                            ],
                           );
                         }
                       },

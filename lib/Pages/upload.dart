@@ -136,16 +136,16 @@ class _UploadState extends State<Upload>
   //     file = compressedImageFile;
   //   });
   // }
-  Future<String> uploadVideo(imageFile) async{
-       StorageUploadTask uploadTask =
-        storageRef.child("post_$postId.mp4").putFile(imageFile, StorageMetadata(contentType: 'video/mp4'));
+  Future<String> uploadVideo(imageFile) async {
+    StorageUploadTask uploadTask = storageRef
+        .child("post_$postId.mp4")
+        .putFile(imageFile, StorageMetadata(contentType: 'video/mp4'));
     StorageTaskSnapshot storageSnap = await uploadTask.onComplete;
     String downloadUrl = await storageSnap.ref.getDownloadURL();
     return downloadUrl;
   }
 
   Future<String> uploadImage(imageFile) async {
-   
     print(isVideo);
     final ref =
         // ? FirebaseStorage.instance.ref().child('post_$postId.mp4')
@@ -170,7 +170,7 @@ class _UploadState extends State<Upload>
       "description": description,
       "location": location,
       "timestamp": timestamp,
-      "isVideo" : isVideo,
+      "isVideo": isVideo,
       "likes": {},
     });
   }
@@ -180,8 +180,8 @@ class _UploadState extends State<Upload>
       isUploading = true;
     });
     //await compressImage();
-    String mediaUrl = isVideo ? await uploadVideo(file)
-    : await uploadImage(file);
+    String mediaUrl =
+        isVideo ? await uploadVideo(file) : await uploadImage(file);
     print(mediaUrl);
     createPostInFirestore(
       mediaUrl: mediaUrl,
@@ -204,10 +204,10 @@ class _UploadState extends State<Upload>
         // leading: IconButton(
         //     icon: Icon(Icons.arrow_back),
         //     onPressed: () => Navigator.of(context).pop()),
-        title: Text(
-          "New Post",
-          // style: TextStyle(color: Colors.black),
-        ),
+        // title: Text(
+        //   "New Post",
+        //   // style: TextStyle(color: Colors.black),
+        // ),
         actions: [
           FlatButton(
             onPressed:

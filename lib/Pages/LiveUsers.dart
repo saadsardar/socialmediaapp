@@ -7,6 +7,14 @@ import 'package:social/Pages/call.dart';
 import 'package:social/Pages/search.dart';
 import '../Models/user.dart';
 
+const List<String> countries = [
+  'Malaysia',
+  'Indonesia',
+  'Thailand',
+  'Vietnam',
+  'Phillipine'
+];
+
 class LiveUsers extends StatefulWidget {
   final User currentUser;
 
@@ -17,6 +25,7 @@ class LiveUsers extends StatefulWidget {
 
 class _LiveUsersState extends State<LiveUsers> {
   TextEditingController searchController = TextEditingController();
+  List<String> selectedCountries = [];
 
   clearSearch() {
     searchController.clear();
@@ -31,33 +40,110 @@ class _LiveUsersState extends State<LiveUsers> {
       print(status);
     }
 
-    gridViewItem(LiveStream liveStream) {
-      print(liveStream);
+    selectCountryWidget(String country) {
       return GestureDetector(
-        onTap: () async {
-          await _handleCameraAndMic(Permission.camera);
-          await _handleCameraAndMic(Permission.microphone);
-          Navigator.of(context).push(MaterialPageRoute(
-            builder: (context) => CallPage(
-              channelName: liveStream.channelName,
-              role: ClientRole.Audience,
-              currentUser: widget.currentUser,
-            ),
-          ));
+        onTap: () {
+          if (!selectedCountries.contains(country)) {
+            selectedCountries.add(country);
+          } else {
+            selectedCountries.remove(country);
+          }
+          setState(
+            () {},
+          );
         },
         child: Container(
-          margin: const EdgeInsets.all(10),
-          height: 100,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.all(Radius.circular(30)),
-            color: Colors.red,
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.all(Radius.circular(30)),
-            child: Image.network(liveStream.picture,
-                // 'https://i.pinimg.com/originals/6c/09/0f/6c090f6bdb01fa8e15a6fcd3cd2f6043.jpg',
-                fit: BoxFit.cover),
-          ),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.all(Radius.circular(20)),
+              color: selectedCountries.contains(country)
+                  ? Theme.of(context).accentColor
+                  : Theme.of(context).primaryColor,
+            ),
+            // height: 20,
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                country,
+                style: TextStyle(color: Colors.white),
+              ),
+            )),
+      );
+    }
+
+    gridViewItem(LiveStream liveStream) {
+      // print(liveStream);
+      return Container(
+        margin: const EdgeInsets.all(10),
+        height: size.height * 0.3,
+        width: size.width * 0.45,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.all(Radius.circular(30)),
+          color: Colors.red,
+        ),
+        child: Stack(
+          children: [
+            GestureDetector(
+              onTap: () async {
+                await _handleCameraAndMic(Permission.camera);
+                await _handleCameraAndMic(Permission.microphone);
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (context) => CallPage(
+                    channelName: liveStream.channelName,
+                    role: ClientRole.Audience,
+                    currentUser: widget.currentUser,
+                  ),
+                ));
+              },
+              child: Container(
+                // margin: const EdgeInsets.all(10),
+                // height: size.height * 0.3,
+                width: size.width * 0.45,
+                // decoration: BoxDecoration(
+                //   borderRadius: BorderRadius.all(Radius.circular(30)),
+                //   color: Colors.red,
+                // ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.all(Radius.circular(30)),
+                  child: Image.network(liveStream.picture,
+                      // 'https://i.pinimg.com/originals/6c/09/0f/6c090f6bdb01fa8e15a6fcd3cd2f6043.jpg',
+                      fit: BoxFit.cover),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 0,
+              child: Container(
+                // margin: const EdgeInsets.all(10),
+                width: size.width * 0.435,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(30),
+                    bottomRight: Radius.circular(30),
+                  ),
+                  color: Theme.of(context).primaryColor.withOpacity(0.7),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: Text(
+                        liveStream.hostName,
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 2.0),
+                      child: Text(
+                        liveStream.location,
+                        style: TextStyle(color: Colors.white, fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          ],
         ),
       );
     }
@@ -149,6 +235,15 @@ class _LiveUsersState extends State<LiveUsers> {
               ),
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                for (var item in countries) selectCountryWidget(item),
+              ],
+            ),
+          ),
           Expanded(
             child: StreamBuilder(
               stream: FirebaseFirestore.instance
@@ -175,14 +270,26 @@ class _LiveUsersState extends State<LiveUsers> {
                     },
                   );
 
+                  List<LiveStream> selectedLiveStreams = [];
+                  if (selectedCountries.isEmpty) {
+                    selectedLiveStreams = liveStreams;
+                  } else {
+                    liveStreams.forEach((e) {
+                      if (selectedCountries.contains(e.location)) {
+                        selectedLiveStreams.add(e);
+                      }
+                    });
+                  }
+
                   return GridView.builder(
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
                           mainAxisSpacing: 10,
                           // childAspectRatio: 0.8,
                           crossAxisSpacing: 15),
-                      itemCount: liveStreams.length,
-                      itemBuilder: (ctx, i) => gridViewItem(liveStreams[i]));
+                      itemCount: selectedLiveStreams.length,
+                      itemBuilder: (ctx, i) =>
+                          gridViewItem(selectedLiveStreams[i]));
                 }
               },
             ),

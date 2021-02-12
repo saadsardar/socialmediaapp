@@ -9,9 +9,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:social/Models/message.dart';
 import 'package:social/Models/user.dart';
-import 'package:social/Pages/GiftCoinsScreen.dart';
 import 'package:social/Widgets/HearAnim.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:social/Widgets/SuccessMessageDialog.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../utils/settings.dart';
 
@@ -34,8 +35,15 @@ class CallPage extends StatefulWidget {
 class _CallPageState extends State<CallPage> {
   final _users = <int>[];
   bool muted = false;
+  bool isInit = false;
   RtcEngine _engine;
   int liveUsersCount = 0;
+  TextEditingController coinEditingController;
+  FocusNode numberFocusNode;
+  Position _currentPosition;
+  String _currentAddress = '';
+  // final Geolocator geolocator = Geolocator()..forceAndroidLocationManager;
+  final Geolocator geolocator = Geolocator()..forceAndroidLocationManager;
 
   @override
   void dispose() {
@@ -44,12 +52,14 @@ class _CallPageState extends State<CallPage> {
     // destroy sdk
     _engine.leaveChannel();
     _engine.destroy();
+    coinEditingController.dispose();
     super.dispose();
   }
 
   @override
   void initState() {
     super.initState();
+    coinEditingController = TextEditingController();
     // initialize agora sdk
     initialize();
   }
@@ -68,6 +78,34 @@ class _CallPageState extends State<CallPage> {
             user: 'System');
       });
       return;
+    }
+
+    _getAddressFromLatLng() async {
+      try {
+        List<Placemark> p = await geolocator.placemarkFromCoordinates(
+            _currentPosition.latitude, _currentPosition.longitude);
+        Placemark place = p[0];
+        // _currentAddress = "${place.name}, ${place.locality}, ${place.country}";
+        _currentAddress = place.country;
+        print('place: $place');
+      } catch (e) {
+        print(e);
+      }
+    }
+
+    Future<void> _getCurrentLocation() async {
+      if (_currentPosition == null) {
+        try {
+          final position = await geolocator.getCurrentPosition(
+              desiredAccuracy: LocationAccuracy.best);
+
+          _currentPosition = position;
+          print('current position $_currentPosition');
+          await _getAddressFromLatLng();
+        } catch (e) {
+          print(e);
+        }
+      }
     }
 
     await _initAgoraRtcEngine();
@@ -111,13 +149,15 @@ class _CallPageState extends State<CallPage> {
             .get();
         final liveStreamData = liveStreamSnapshot.data();
         token = liveStreamData['token'];
-        liveUsersCount = liveStreamData['liveUsersCount'];
+        // liveUsersCount = liveStreamData['liveUsersCount'];
       } catch (e) {
         final info = 'onError: $e';
         _log(info: info, type: 'notif', user: 'System');
       }
     }
     if (widget.role == ClientRole.Broadcaster) {
+      // LocationPermission permission = await Geolocator.requestPermission();
+      await _getCurrentLocation();
       await FirebaseFirestore.instance
           .collection('livestream')
           .doc(widget.channelName)
@@ -126,12 +166,16 @@ class _CallPageState extends State<CallPage> {
         'token': token,
         'hostName': widget.currentUser.displayName,
         'picture': widget.currentUser.photoUrl,
-        'liveUsersCount': 1
+        'liveUsersCount': 1,
+        'location': _currentAddress,
       });
-      setState(() {
-        liveUsersCount = 1;
-      });
+      _log(info: introMessage, type: 'notif', user: 'System');
+
+      // setState(() {
+      //   liveUsersCount = 1;
+      // });
     }
+    isInit = true;
     await _engine.joinChannel(token, widget.channelName, null, 0);
   }
 
@@ -265,6 +309,7 @@ class _CallPageState extends State<CallPage> {
 
   //new UI
   var tryingToEnd = false;
+  bool tryingToGift = false;
   bool personBool = false;
   bool accepted = false;
   bool heart = false;
@@ -272,88 +317,124 @@ class _CallPageState extends State<CallPage> {
   Timer _timer;
 
   Widget _endCall() {
-    return Container(
-      width: MediaQuery.of(context).size.width,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(15, 15, 15, 15),
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  tryingToEnd = true;
-                });
-              },
-              child: Text(
-                'END',
-                style: TextStyle(
-                    color: Theme.of(context).primaryColor,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold),
+    return Positioned(
+      top: 0,
+      child: Container(
+        width: MediaQuery.of(context).size.width,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(15, 15, 15, 15),
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    tryingToEnd = true;
+                  });
+                },
+                child: Text(
+                  'END',
+                  style: TextStyle(
+                      color: Theme.of(context).primaryColor,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _liveText() {
-    return Padding(
-      padding: const EdgeInsets.all(15.0),
-      child: Container(
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: <Widget>[
-            Container(
-              decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor,
-                  borderRadius: BorderRadius.all(Radius.circular(4.0))),
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 5.0, horizontal: 8.0),
-                child: Text(
-                  'LIVE',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold),
+    return Positioned(
+      top: 0,
+      left: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(15.0),
+        child: Container(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: <Widget>[
+              Container(
+                decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor,
+                    borderRadius: BorderRadius.all(Radius.circular(4.0))),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 5.0, horizontal: 8.0),
+                  child: Text(
+                    'LIVE',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 5, right: 10),
-              child: Container(
-                  decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(.6),
-                      borderRadius: BorderRadius.all(Radius.circular(4.0))),
-                  height: 28,
-                  alignment: Alignment.center,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: <Widget>[
-                        Icon(
-                          Icons.remove_red_eye,
-                          color: Colors.white,
-                          size: 13,
-                        ),
-                        SizedBox(
-                          width: 5,
-                        ),
-                        Text(
-                          '$liveUsersCount',
-                          style: TextStyle(color: Colors.white, fontSize: 11),
-                        ),
-                      ],
-                    ),
-                  )),
-            ),
-          ],
+              Padding(
+                padding: const EdgeInsets.only(left: 5, right: 10),
+                child: Container(
+                    decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(.6),
+                        borderRadius: BorderRadius.all(Radius.circular(4.0))),
+                    height: 28,
+                    alignment: Alignment.center,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: <Widget>[
+                          Icon(
+                            Icons.remove_red_eye,
+                            color: Colors.white,
+                            size: 13,
+                          ),
+                          SizedBox(
+                            width: 5,
+                          ),
+                          if (isInit)
+                            StreamBuilder(
+                              stream: FirebaseFirestore.instance
+                                  .collection('livestream')
+                                  .doc(widget.channelName)
+                                  .snapshots(),
+                              builder: (ctx, snap) {
+                                if (snap.connectionState ==
+                                        ConnectionState.waiting ||
+                                    snap.error != null) {
+                                  print('snap.error : ${snap.error}');
+                                  return Text(
+                                    '1',
+                                    style: TextStyle(
+                                        color: Colors.white, fontSize: 11),
+                                  );
+                                } else {
+                                  print(snap.data);
+                                  final liveStreamData = snap.data;
+                                  if (liveStreamData == null) {
+                                    liveUsersCount = 1;
+                                  } else {
+                                    liveUsersCount =
+                                        liveStreamData['liveUsersCount'];
+                                  }
+                                  return Text(
+                                    '$liveUsersCount',
+                                    style: TextStyle(
+                                        color: Colors.white, fontSize: 11),
+                                  );
+                                }
+                              },
+                            ),
+                        ],
+                      ),
+                    )),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -624,7 +705,7 @@ class _CallPageState extends State<CallPage> {
                                           bottom: 10, left: 8, right: 8),
                                       child: Text(
                                         messages[index].message,
-                                        maxLines: 3,
+                                        // maxLines: 3,
                                         overflow: TextOverflow.fade,
                                         style: TextStyle(
                                             color: Colors.white, fontSize: 14),
@@ -705,32 +786,7 @@ class _CallPageState extends State<CallPage> {
                 padding: const EdgeInsets.all(12.0),
               ),
             ),
-            if (widget.channelName != widget.currentUser.id)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(4.0, 0, 0, 0),
-                child: MaterialButton(
-                  minWidth: 0,
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (ctx) => GiftCoinsScreen(
-                          senderUserId: widget.currentUser.id,
-                          receiverUserId: widget.channelName,
-                        ),
-                      ),
-                    );
-                  },
-                  child: Icon(
-                    Icons.card_giftcard_outlined,
-                    color: Colors.white,
-                    size: 20.0,
-                  ),
-                  shape: CircleBorder(),
-                  elevation: 2.0,
-                  color: Colors.blue[400],
-                  padding: const EdgeInsets.all(12.0),
-                ),
-              ),
+
             Padding(
               padding: const EdgeInsets.fromLTRB(4.0, 0, 0, 0),
               child: MaterialButton(
@@ -746,7 +802,37 @@ class _CallPageState extends State<CallPage> {
                 color: Colors.white,
                 padding: const EdgeInsets.all(12.0),
               ),
-            )
+            ),
+            // if (widget.channelName != widget.currentUser.id)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4.0, 0, 0, 0),
+              child: MaterialButton(
+                minWidth: 0,
+                onPressed: () {
+                  setState(() {
+                    tryingToGift = true;
+                  });
+                  // Navigator.of(context).push(
+                  // MaterialPageRoute(
+
+                  // builder: (ctx) => GiftCoinsScreen(
+                  //   senderUserId: widget.currentUser.id,
+                  //   receiverUserId: widget.channelName,
+                  // ),
+                  // ),
+                  // );
+                },
+                child: Icon(
+                  Icons.card_giftcard_outlined,
+                  color: Colors.white,
+                  size: 20.0,
+                ),
+                shape: CircleBorder(),
+                elevation: 2.0,
+                color: Colors.red,
+                padding: const EdgeInsets.all(12.0),
+              ),
+            ),
           ]),
         ),
       ),
@@ -767,6 +853,203 @@ class _CallPageState extends State<CallPage> {
     }
   }
 
+  Widget _amountField() {
+    return Container(
+      width: MediaQuery.of(context).size.width * 0.6,
+      padding: const EdgeInsets.only(top: 10),
+      child: TextField(
+        textInputAction: TextInputAction.next,
+        keyboardType: TextInputType.number,
+        focusNode: numberFocusNode,
+        controller: coinEditingController,
+        onSubmitted: (_) => numberFocusNode.unfocus(),
+        decoration: InputDecoration(
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(20)),
+            borderSide: BorderSide(color: Colors.white),
+          ),
+          labelText: 'Coins',
+          hintText: 'Enter Amount Of Coins',
+        ),
+      ),
+    );
+  }
+
+  Future<String> submit() async {
+    print('In Submit');
+    String msg = '';
+    final coinsString = coinEditingController.text;
+    print(coinsString);
+    final receiverDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(widget.channelName)
+        .get();
+    User receiverUser = User.fromDocument(receiverDoc);
+    int coins = int.tryParse(coinsString);
+    if (widget.currentUser.coins < coins) {
+      msg = 'Not Enough Coins';
+    } else {
+      print('In Try');
+      final newSendersCoin = widget.currentUser.coins - coins;
+      final newReceiversCoin = receiverUser.coins + coins;
+
+      try {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(widget.currentUser.id)
+            .update({'coins': newSendersCoin});
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(widget.channelName)
+            .update({'coins': newReceiversCoin});
+      } catch (e) {
+        msg = e.toString();
+      }
+    }
+    coinEditingController.clear();
+    return msg;
+  }
+
+  Future<void> confirmationDialogBox() async {
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) => Dialog(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+        child: Container(
+          height: 400.0,
+          width: 300.0,
+          child: FutureBuilder(
+              future: submit(),
+              builder: (ctx, snap) {
+                if (snap.connectionState == ConnectionState.waiting) {
+                  return Center(
+                    child: CircularProgressIndicator(),
+                  );
+                } else {
+                  print('Snap Data ${snap.data}');
+                  final msg = snap.data ?? 'Error';
+                  // final msg = 'abc';
+                  if (msg == '') {
+                    return Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        Padding(
+                          padding: EdgeInsets.all(15.0),
+                          child: Text(
+                            'Success',
+                            style: TextStyle(
+                              color: Theme.of(context).primaryColor,
+                              fontSize: 30,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.all(15.0),
+                          child: Icon(
+                            Icons.check_box_rounded,
+                            color: Theme.of(context).accentColor,
+                            size: 40,
+                          ),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.all(15.0),
+                          child: Text(
+                            'Coins Successfully Transferred',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Theme.of(context).primaryColor,
+                              fontSize: 20,
+                            ),
+                          ),
+                        ),
+                        Padding(padding: EdgeInsets.only(top: 30.0)),
+                        FlatButton(
+                          onPressed: () {
+                            setState(() {
+                              Navigator.of(context).pop();
+                              tryingToGift = false;
+                            });
+                            // Navigator.pushAndRemoveUntil(
+                            //     context,
+                            //     MaterialPageRoute(builder: (context) => Home()),
+                            //     (Route<dynamic> route) => false);
+                          },
+                          child: Text(
+                            'Return',
+                            style:
+                                TextStyle(color: Colors.purple, fontSize: 18.0),
+                          ),
+                        )
+                      ],
+                    );
+                  } else {
+                    return errorMsg(context, msg);
+                  }
+                }
+              }),
+        ),
+      ),
+    );
+  }
+
+  sendGift() {
+    return SingleChildScrollView(
+      child: Container(
+        alignment: Alignment.center,
+        // height: MediaQuery.of(context).size.height * 0.6,
+        height: 400,
+        width: MediaQuery.of(context).size.width * 0.7,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.all(Radius.circular(40)),
+          color: Colors.red.withOpacity(0.5),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            _amountField(),
+            SizedBox(height: 30),
+            RaisedButton(
+              padding: const EdgeInsets.all(10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18.0),
+              ),
+              color: Theme.of(context).primaryColor,
+              child: Text(
+                'Gift Coins',
+                style: TextStyle(fontSize: 18, color: Colors.white),
+              ),
+              onPressed: () async {
+                confirmationDialogBox();
+              },
+            ),
+            SizedBox(height: 10),
+            RaisedButton(
+              padding: const EdgeInsets.all(10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18.0),
+              ),
+              color: Theme.of(context).primaryColor,
+              child: Text(
+                'Cancel',
+                style: TextStyle(fontSize: 18, color: Colors.white),
+              ),
+              onPressed: () {
+                setState(() {
+                  tryingToGift = false;
+                });
+                // confirmationDialogBox();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -777,22 +1060,28 @@ class _CallPageState extends State<CallPage> {
         backgroundColor: Colors.black,
         body: Center(
           child: Stack(
+            alignment: Alignment.center,
             children: <Widget>[
               // _viewRows(),
               // _panel(),
               // _toolbar(),
 
               _viewRows(), // Video Widget
-              if (tryingToEnd == false) _endCall(),
-              if (tryingToEnd == false) _liveText(),
-              if (heart == true && tryingToEnd == false) heartPop(),
-              if (tryingToEnd == false) _bottomBar(), // send message
-              if (tryingToEnd == false) messageList(),
-              if (tryingToEnd == true)
-                endLive(), // view message // view message
-              // if (personBool == true && waiting == false) personList(),
-              // if (accepted == true) stopSharing(),
-              // if (waiting == true) guestWaiting(),
+              if (tryingToEnd == false && tryingToGift == false) _endCall(),
+              if (tryingToEnd == false && tryingToGift == false) _liveText(),
+              if (heart == true &&
+                  tryingToEnd == false &&
+                  tryingToGift == false)
+                heartPop(),
+              if (tryingToEnd == false && tryingToGift == false)
+                _bottomBar(), // send message
+              if (tryingToEnd == false && tryingToGift == false) messageList(),
+              if (tryingToEnd == true) endLive(),
+              if (tryingToGift == true) sendGift(),
+              // GiftCoinsScreen(
+              //   senderUserId: widget.currentUser.id,
+              //   receiverUserId: widget.channelName,
+              // )
             ],
           ),
         ),
@@ -821,22 +1110,22 @@ class _CallPageState extends State<CallPage> {
   }
 
   void _log({String info, String type, String user}) {
-    if (type == 'message' && info.contains('m1x2y3z4p5t6l7k8')) {
-      popUp();
-    } else if (type == 'message' && info.contains('k1r2i3s4t5i6e7')) {
-      setState(() {
-        accepted = true;
-        personBool = false;
-        personBool = false;
-        // waiting = false;
-      });
-    } else if (type == 'message' && info.contains('E1m2I3l4i5E6')) {
-      // stopFunction();
-    } else if (type == 'message' && info.contains('R1e2j3e4c5t6i7o8n9e0d')) {
-      setState(() {
-        // waiting = false;
-      });
-      /*FlutterToast.showToast(
+    // if (type == 'message' && info.contains('m1x2y3z4p5t6l7k8')) {
+    //   popUp();
+    // } else if (type == 'message' && info.contains('k1r2i3s4t5i6e7')) {
+    //   setState(() {
+    //     accepted = true;
+    //     personBool = false;
+    //     personBool = false;
+    //     // waiting = false;
+    //   });
+    // } else if (type == 'message' && info.contains('E1m2I3l4i5E6')) {
+    //   // stopFunction();
+    // } else if (type == 'message' && info.contains('R1e2j3e4c5t6i7o8n9e0d')) {
+    //   setState(() {
+    //     // waiting = false;
+    //   });
+    /*FlutterToast.showToast(
           msg: "Guest Declined",
           toastLength: Toast.LENGTH_LONG,
           gravity: ToastGravity.TOP,
@@ -846,29 +1135,29 @@ class _CallPageState extends State<CallPage> {
           fontSize: 16.0
       );*/
 
-    } else {
-      // var image =
-      //     'https://www.teahub.io/photos/full/364-3646192_beautiful-girls-4k-images-dpz-beautiful-pinterest-girls.jpg';
-      // Message m = new Message(
-      //     message: info,
-      //     type: type,
-      //     user: user,
-      //     image: widget.currentUser.photoUrl);
+    // } else {
+    // var image =
+    //     'https://www.teahub.io/photos/full/364-3646192_beautiful-girls-4k-images-dpz-beautiful-pinterest-girls.jpg';
+    // Message m = new Message(
+    //     message: info,
+    //     type: type,
+    //     user: user,
+    //     image: widget.currentUser.photoUrl);
 
-      FirebaseFirestore.instance
-          .collection('livestream')
-          .doc(widget.channelName)
-          .collection('comments')
-          .add({
-        'message': info,
-        'type': type,
-        'user': user,
-        'image': widget.currentUser.photoUrl,
-        'timestamp': Timestamp.now(),
-      });
-      // setState(() {
-      //   _infoStrings2.insert(0, m);
-      // });
-    }
+    FirebaseFirestore.instance
+        .collection('livestream')
+        .doc(widget.channelName)
+        .collection('comments')
+        .add({
+      'message': info,
+      'type': type,
+      'user': user,
+      'image': widget.currentUser.photoUrl,
+      'timestamp': Timestamp.now(),
+    });
+    // setState(() {
+    //   _infoStrings2.insert(0, m);
+    // });
+    // }
   }
 }

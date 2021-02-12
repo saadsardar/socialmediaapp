@@ -41,7 +41,7 @@ class _PaymentScreen2State extends State<PaymentScreen2> {
   void initState() {
     StripePayment.setOptions(StripeOptions(
         publishableKey:
-            "pk_test_51IGDVOGb9snCowqWnQ8VfI6d6wsiWBq63TRjN8Cx4FLtZr6L89JfbZGda7I3yMDeqjrwtbuxecnSx7CWBHqhOzau00rOK6MsDd"));
+            "pk_live_51IGDVOGb9snCowqWsm9zsRcJeuq3r6OhvOMF2YShgcMP8zYJsbXzDLMb1yi09vQVFEssIX2o9ZBHRkV3yhms5Yq800H9Bm1xrz"));
     super.initState();
   }
 

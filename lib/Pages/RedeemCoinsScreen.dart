@@ -72,8 +72,9 @@ class _RedeemCoinsScreenState extends State<RedeemCoinsScreen> {
         }
       },
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-        height: 60,
+        margin: const EdgeInsets.symmetric(vertical: 3, horizontal: 10),
+        width: MediaQuery.of(context).size.width * 0.7,
+        height: 40,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.all(
             Radius.circular(20),
@@ -82,7 +83,7 @@ class _RedeemCoinsScreenState extends State<RedeemCoinsScreen> {
               _selectedGift == giftItem ? Colors.grey[400] : Colors.grey[300],
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
               margin: const EdgeInsets.only(left: 25.0),
@@ -91,14 +92,15 @@ class _RedeemCoinsScreenState extends State<RedeemCoinsScreen> {
                 fit: BoxFit.contain,
               ),
             ),
+            // Spacer(),
             SizedBox(
-              width: 10,
+              width: 20,
             ),
             Expanded(
               child: Text(
-                'Redeem ${giftItem.coins} For \$${giftItem.amount.toStringAsFixed(2)}',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.black, fontSize: 20),
+                '${giftItem.coins} For \$${giftItem.amount.toStringAsFixed(0)}',
+                textAlign: TextAlign.left,
+                style: TextStyle(color: Colors.black, fontSize: 19),
               ),
             ),
           ],
@@ -119,6 +121,23 @@ class _RedeemCoinsScreenState extends State<RedeemCoinsScreen> {
       child: Text(
         'Available Coins: ${senderUser.coins}',
         style: TextStyle(fontSize: 22),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  displayRedeemText() {
+    return Container(
+      height: 50,
+      alignment: Alignment.center,
+      width: MediaQuery.of(context).size.width * 0.75,
+      margin: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+          borderRadius: BorderRadius.all(Radius.circular(15)),
+          color: Colors.grey[300]),
+      child: Text(
+        'Redeem',
+        style: TextStyle(fontSize: 20),
         textAlign: TextAlign.center,
       ),
     );
@@ -239,6 +258,7 @@ class _RedeemCoinsScreenState extends State<RedeemCoinsScreen> {
                     // displayReceiverUser(),
                     SizedBox(height: 10),
                     displaySenderCoins(),
+                    displayRedeemText(),
 
                     for (var giftItem in _gifts) displayGiftItem(giftItem),
                     SizedBox(height: 10),

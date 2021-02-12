@@ -53,7 +53,7 @@ class _FrontPageState extends State<FrontPage> with TickerProviderStateMixin {
                 ),
                 Tab(
                   child: Text(
-                    'Bar',
+                    'Popular',
                     style: TextStyle(fontSize: 20),
                   ),
                 ),
