@@ -22,7 +22,6 @@ class Timeline extends StatefulWidget {
 class _TimelineState extends State<Timeline> {
   List<Post> posts = [];
   List<String> followingList = [];
-  bool isInit = false;
   // List<String> postsList = [];
 
   @override
@@ -126,9 +125,9 @@ class _TimelineState extends State<Timeline> {
   //   }
   // }
   buildTimeline() {
-    if (posts.isEmpty && !isInit) {
+    if (posts.isEmpty) {
       return circularProgress();
-    } else if (posts.isEmpty && isInit) {
+    } else if (posts.isEmpty) {
       return buildUsersToFollow();
     } else {
       return ListView(children: posts);
@@ -195,11 +194,7 @@ class _TimelineState extends State<Timeline> {
 
   @override
   Widget build(context) {
-    if (!isInit) {
-      print('Not isinit');
-      // getPosts();
-      getFollowing();
-    }
+    // getFollowing();
     return Scaffold(
         body: RefreshIndicator(
             onRefresh: () => getTimeline(), child: buildTimeline())
