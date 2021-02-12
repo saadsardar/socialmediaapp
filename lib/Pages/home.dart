@@ -16,6 +16,7 @@ import 'package:social/Pages/profile.dart';
 import 'package:social/Pages/upload.dart';
 import 'FrontPage.dart';
 import 'create_account.dart';
+import '../Widgets/SuccessMessageDialog.dart';
 
 final GoogleSignIn googleSignIn = GoogleSignIn();
 final StorageReference storageRef = FirebaseStorage.instance.ref();
@@ -210,7 +211,8 @@ class _HomeState extends State<Home> {
         "email": user.email,
         "displayName": user.displayName,
         "bio": "",
-        "timestamp": timestamp
+        "timestamp": timestamp,
+        "agreedToTerms": false,
       });
       doc = await usersRef.doc(user.id).get();
     }
@@ -233,6 +235,13 @@ class _HomeState extends State<Home> {
     googleSignIn.signOut();
   }
 
+  agreedToConditions() {
+    setState(() {
+      currentUser.agreedToTerms = true;
+    });
+    usersRef.doc(currentUser.id).update({'agreedToTerms': true});
+  }
+
   onPageChanged(int pageIndex) {
     setState(() {
       this.pageIndex = pageIndex;
@@ -248,47 +257,53 @@ class _HomeState extends State<Home> {
   }
 
   Scaffold buildAuthScreen() {
-    return Scaffold(
-      key: _scaffoldKey,
-      body: PageView(
-        children: <Widget>[
-          LiveUsers(currentUser),
-          FrontPage(currentUser),
-          Upload(currentUser: currentUser),
-          ActivityFeed(),
-          Profile(
-            profileId: currentUser?.id,
-          ),
-        ],
-        controller: pageController,
-        onPageChanged: onPageChanged,
-        physics: NeverScrollableScrollPhysics(),
-      ),
-      bottomNavigationBar: CupertinoTabBar(
-          currentIndex: pageIndex,
-          onTap: onTap,
-          activeColor: Theme.of(context).primaryColor,
-          items: [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.whatshot),
+    if (currentUser.agreedToTerms == false) {
+      return Scaffold(
+        body: agreeToTerms(context, logout, agreedToConditions),
+      );
+    } else {
+      return Scaffold(
+        key: _scaffoldKey,
+        body: PageView(
+          children: <Widget>[
+            LiveUsers(currentUser),
+            FrontPage(currentUser),
+            Upload(currentUser: currentUser),
+            ActivityFeed(),
+            Profile(
+              profileId: currentUser?.id,
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.stars_sharp),
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(
-                Icons.add_a_photo_rounded,
-                size: 35.0,
+          ],
+          controller: pageController,
+          onPageChanged: onPageChanged,
+          physics: NeverScrollableScrollPhysics(),
+        ),
+        bottomNavigationBar: CupertinoTabBar(
+            currentIndex: pageIndex,
+            onTap: onTap,
+            activeColor: Theme.of(context).primaryColor,
+            items: [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.whatshot),
               ),
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.notifications_active),
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.account_circle),
-            ),
-          ]),
-    );
+              BottomNavigationBarItem(
+                icon: Icon(Icons.stars_sharp),
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(
+                  Icons.add_a_photo_rounded,
+                  size: 35.0,
+                ),
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.notifications_active),
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.account_circle),
+              ),
+            ]),
+      );
+    }
   }
 
   Widget buildUnAuthScreen() {

@@ -56,16 +56,16 @@ class _UploadState extends State<Upload>
     });
   }
 
-  Future handleChooseVideoFromGallery() async {
-    Navigator.pop(context);
-    var pickedimagefile = await _picker.getVideo(
-      source: ImageSource.gallery,
-    );
-    setState(() {
-      file = File(pickedimagefile.path);
-      isVideo = true;
-    });
-  }
+  // Future handleChooseVideoFromGallery() async {
+  //   Navigator.pop(context);
+  //   var pickedimagefile = await _picker.getVideo(
+  //     source: ImageSource.gallery,
+  //   );
+  //   setState(() {
+  //     file = File(pickedimagefile.path);
+  //     isVideo = true;
+  //   });
+  // }
 
   selectImage(parentContext) {
     return showDialog(
@@ -79,9 +79,9 @@ class _UploadState extends State<Upload>
             SimpleDialogOption(
                 child: Text("Image from Gallery"),
                 onPressed: handleChooseFromGallery),
-            SimpleDialogOption(
-                child: Text("Video from Gallery"),
-                onPressed: handleChooseVideoFromGallery),
+            // SimpleDialogOption(
+            //     child: Text("Video from Gallery"),
+            //     onPressed: handleChooseVideoFromGallery),
             SimpleDialogOption(
               child: Text("Cancel"),
               onPressed: () => Navigator.pop(context),

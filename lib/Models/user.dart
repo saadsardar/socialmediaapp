@@ -8,6 +8,7 @@ class User {
   String displayName;
   String bio;
   int coins;
+  bool agreedToTerms;
 
   User({
     this.id,
@@ -17,17 +18,18 @@ class User {
     this.displayName,
     this.bio,
     this.coins,
+    this.agreedToTerms,
   });
 
   factory User.fromDocument(DocumentSnapshot doc) {
     return User(
-      id: doc['id'],
-      email: doc['email'],
-      username: doc['username'],
-      photoUrl: doc['photoUrl'],
-      displayName: doc['displayName'],
-      bio: doc['bio'],
-      coins: doc['coins'],
-    );
+        id: doc['id'],
+        email: doc['email'],
+        username: doc['username'],
+        photoUrl: doc['photoUrl'],
+        displayName: doc['displayName'],
+        bio: doc['bio'],
+        coins: doc['coins'],
+        agreedToTerms: doc['agreedToTerms']);
   }
 }
